@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { SparklesIcon } from './Icons.jsx'
 
 const MIN_LENGTH = 10
 
@@ -6,17 +7,18 @@ export default function TopicForm({ onGenerate, loading }) {
   const [topic, setTopic] = useState('')
   const [error, setError] = useState('')
 
-  const remaining = MIN_LENGTH - topic.trim().length
+  const trimmedLength = topic.trim().length
+  const remaining = MIN_LENGTH - trimmedLength
+  const ready = trimmedLength >= MIN_LENGTH
 
   function handleSubmit(e) {
     e.preventDefault()
-    const trimmed = topic.trim()
-    if (trimmed.length < MIN_LENGTH) {
+    if (!ready) {
       setError(`Please enter at least ${MIN_LENGTH} characters.`)
       return
     }
     setError('')
-    onGenerate(trimmed)
+    onGenerate(topic.trim())
   }
 
   return (
@@ -28,19 +30,27 @@ export default function TopicForm({ onGenerate, loading }) {
           type="text"
           placeholder="e.g. The French Revolution, React Hooks, Photosynthesis…"
           value={topic}
-          onChange={(e) => setTopic(e.target.value)}
+          onChange={(e) => {
+            setTopic(e.target.value)
+            if (error) setError('')
+          }}
           disabled={loading}
           autoComplete="off"
+          aria-invalid={!!error}
+          aria-describedby="topic-meta"
         />
-        <button type="submit" disabled={loading || topic.trim().length < MIN_LENGTH}>
+        <button type="submit" className="btn-primary" disabled={loading || !ready}>
+          <SparklesIcon />
           {loading ? 'Generating…' : 'Generate'}
         </button>
       </div>
-      <div className="topic-meta">
+      <div className="topic-meta" id="topic-meta" role="status" aria-live="polite">
         {error ? (
           <span className="error-text">{error}</span>
         ) : remaining > 0 ? (
-          <span className="hint">Enter {remaining} more character{remaining === 1 ? '' : 's'}…</span>
+          <span className="hint">
+            Enter {remaining} more character{remaining === 1 ? '' : 's'}…
+          </span>
         ) : (
           <span className="hint ok">Ready — 10 question/answer cards will be generated.</span>
         )}

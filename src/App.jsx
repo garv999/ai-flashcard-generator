@@ -4,6 +4,7 @@ import TopicForm from './components/TopicForm.jsx'
 import Sidebar from './components/Sidebar.jsx'
 import StudyView from './components/StudyView.jsx'
 import SettingsModal from './components/SettingsModal.jsx'
+import { AlertIcon } from './components/Icons.jsx'
 import { generateFlashcards } from './services/aiService.js'
 import {
   loadSets,
@@ -13,9 +14,24 @@ import {
   makeId,
 } from './utils/storage.js'
 
+function LoadingState() {
+  return (
+    <div className="loading-state" aria-busy="true" aria-live="polite">
+      <div className="loading-head">
+        <div className="skeleton skeleton-title" />
+        <div className="skeleton skeleton-pill" />
+      </div>
+      <div className="skeleton skeleton-card">
+        <div className="spinner" />
+        <p className="loading-label">Generating your flashcards…</p>
+      </div>
+    </div>
+  )
+}
+
 export default function App() {
-  const [sets, setSets] = useState(() => loadSets())
-  const [settings, setSettings] = useState(() => loadSettings())
+  const [sets, setSets] = useState(loadSets)
+  const [settings, setSettings] = useState(loadSettings)
   const [activeId, setActiveId] = useState(() => loadSets()[0]?.id ?? null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -49,21 +65,16 @@ export default function App() {
   }
 
   function handleDelete(id) {
-    setSets((prev) => prev.filter((s) => s.id !== id))
-    if (activeId === id) {
-      setActiveId((prevActive) => {
-        const remaining = sets.filter((s) => s.id !== id)
-        return remaining[0]?.id ?? null
-      })
-    }
+    setSets((prev) => {
+      const remaining = prev.filter((s) => s.id !== id)
+      if (id === activeId) setActiveId(remaining[0]?.id ?? null)
+      return remaining
+    })
   }
 
   return (
     <div className="app">
-      <Header
-        provider={settings.provider}
-        onOpenSettings={() => setShowSettings(true)}
-      />
+      <Header provider={settings.provider} onOpenSettings={() => setShowSettings(true)} />
 
       <main className="main">
         <Sidebar
@@ -73,20 +84,18 @@ export default function App() {
           onDelete={handleDelete}
         />
 
-        <section className="content">
+        <div className="content">
           <TopicForm onGenerate={handleGenerate} loading={loading} />
 
-          {error && <div className="banner error">{error}</div>}
-
-          {loading ? (
-            <div className="loading-state">
-              <div className="spinner" />
-              <p>Generating your flashcards…</p>
+          {error && (
+            <div className="banner error" role="alert">
+              <AlertIcon />
+              <span>{error}</span>
             </div>
-          ) : (
-            <StudyView set={activeSet} />
           )}
-        </section>
+
+          {loading ? <LoadingState /> : <StudyView set={activeSet} />}
+        </div>
       </main>
 
       {showSettings && (
