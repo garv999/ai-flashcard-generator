@@ -10,15 +10,15 @@ A real-time web application that turns any topic into a study-ready deck of ques
 
 ## Features
 
-- **Real-time AI generation** — enter a topic and receive a full deck on demand, with live loading and error states.
+- **Real-time AI generation** — enter a topic and receive a full deck on demand, with a skeleton loading state and clear error handling.
 - **Works out of the box (Demo mode)** — a built-in mock generator means the app runs instantly with no API key.
 - **Bring your own key** — switch to OpenAI (`gpt-4o-mini`) or Anthropic Claude (`claude-sonnet-5`) in Settings to generate real AI cards.
-- **Interactive flip cards** — click a card to flip it with a 3D animation and reveal the answer.
+- **Interactive 3D flip cards** — click a card to flip it with a smooth animation and reveal the answer.
 - **Local persistence** — all sets are stored in the browser's `localStorage`, so study material survives refreshes.
 - **Deck management** — browse, select, switch between, and delete saved sets.
 - **Adjustable deck size** — choose between 3 and 20 cards per set.
 - **Input validation** — enforces a minimum topic length for higher-quality prompts.
-- **Responsive dark UI** — a clean, modern design that works on desktop and mobile.
+- **Premium, responsive dark UI** — a token-based design system with the Inter typeface, gradient accents, custom SVG iconography, a deck progress bar, and polished micro-interactions, from desktop down to mobile.
 
 ---
 
@@ -55,6 +55,18 @@ The app opens in Demo mode and works immediately — no key required.
 
 ---
 
+## Accessibility
+
+The interface is built to be usable with a keyboard and assistive technologies:
+
+- **Keyboard navigation** — Left/Right arrow keys move between cards; Enter or Space flips the focused card.
+- **Visible focus rings** on every interactive element via `:focus-visible`.
+- **ARIA semantics** — labelled controls, a `progressbar` for deck progress, `role="alert"` errors, and `aria-live` regions for validation and loading.
+- **Accessible dialog** — the Settings modal uses `role="dialog"`/`aria-modal`, moves focus on open, and closes on Escape.
+- **Reduced motion** — animations are minimised when `prefers-reduced-motion` is set.
+
+---
+
 ## Project Structure
 
 ```
@@ -67,14 +79,15 @@ ai-flashcard-generator/
 └── src/
     ├── main.jsx                 # App entry point
     ├── App.jsx                  # State and orchestration
-    ├── index.css                # Styling (dark theme, flip animation)
+    ├── index.css                # Design system (tokens, dark theme, animations)
     ├── components/
     │   ├── Header.jsx
     │   ├── TopicForm.jsx        # Topic input and validation
     │   ├── Sidebar.jsx          # Saved-set list
-    │   ├── StudyView.jsx        # Deck navigation
+    │   ├── StudyView.jsx        # Deck navigation and progress
     │   ├── Flashcard.jsx        # 3D flip card
-    │   └── SettingsModal.jsx    # Provider, API key, deck size
+    │   ├── SettingsModal.jsx    # Provider, API key, deck size
+    │   └── Icons.jsx            # Reusable SVG icon components
     ├── services/
     │   └── aiService.js         # Demo / OpenAI / Anthropic generators
     └── utils/
@@ -89,7 +102,8 @@ ai-flashcard-generator/
 - **Vite 5** — fast development server and build tooling
 - **OpenAI / Anthropic APIs** — optional real flashcard generation
 - **localStorage** — client-side persistence
-- **Plain CSS** — custom dark theme with a CSS 3D flip animation
+- **Plain CSS** — a token-based design system with custom properties, a CSS 3D flip animation, and no UI framework
+- **Inline SVG icons** — dependency-free, no icon library
 
 ---
 
