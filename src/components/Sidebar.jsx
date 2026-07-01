@@ -26,9 +26,15 @@ export default function Sidebar({ sets, activeId, onSelect, onDelete }) {
                   aria-current={isActive ? 'true' : undefined}
                 >
                   <span className="set-info">
-                    <span className="set-topic">{set.topic}</span>
+                    <span className="set-topic">
+                      {set.topic}
+                      {set.source === 'pdf' && <span className="set-badge">PDF</span>}
+                    </span>
                     <span className="set-sub">
                       {set.cards.length} card{set.cards.length === 1 ? '' : 's'}
+                      {set.source === 'pdf' && set.pageCount
+                        ? ` · ${set.pageCount} page${set.pageCount === 1 ? '' : 's'}`
+                        : ''}
                     </span>
                   </span>
                 </button>

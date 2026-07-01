@@ -18,6 +18,7 @@ export default defineConfig({
         manualChunks: {
           'firebase-auth': ['firebase/app', 'firebase/auth'],
           'firebase-firestore': ['firebase/firestore'],
+          pdfjs: ['pdfjs-dist'],
           react: ['react', 'react-dom'],
         },
       },

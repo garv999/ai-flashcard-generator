@@ -38,13 +38,21 @@ export function subscribeToDecks(uid, onData, onError) {
 }
 
 // Create or update a single deck (idempotent — keyed by deck.id).
+// Persists deck metadata; optional fields are only written when present
+// (Firestore rejects `undefined` values).
 export function saveDeck(uid, deck) {
-  const { id, topic, cards, createdAt } = deck
-  return setDoc(doc(db, 'users', uid, 'decks', id), {
-    topic,
-    cards,
-    createdAt: createdAt || new Date().toISOString(),
-  })
+  const data = {
+    topic: deck.topic,
+    cards: deck.cards,
+    createdAt: deck.createdAt || new Date().toISOString(),
+    source: deck.source || 'topic', // 'topic' | 'pdf'
+  }
+  if (deck.filename) data.filename = deck.filename
+  if (typeof deck.pageCount === 'number') data.pageCount = deck.pageCount
+  if (deck.uploadDate) data.uploadDate = deck.uploadDate
+  if (deck.pageRange) data.pageRange = deck.pageRange
+
+  return setDoc(doc(db, 'users', uid, 'decks', deck.id), data)
 }
 
 export function deleteDeck(uid, deckId) {

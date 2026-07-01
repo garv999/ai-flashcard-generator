@@ -128,6 +128,24 @@ export function LogOutIcon(props) {
   )
 }
 
+export function UploadIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <path d="M17 8l-5-5-5 5M12 3v12" />
+    </svg>
+  )
+}
+
+export function FileTextIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <path d="M14 2v6h6M9 13h6M9 17h6M9 9h2" />
+    </svg>
+  )
+}
+
 // Google "G" logo in its brand colours. Uses fill (not the shared stroke base)
 // so it renders correctly on the light Google button.
 export function GoogleIcon(props) {

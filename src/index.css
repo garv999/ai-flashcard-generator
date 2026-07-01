@@ -1496,3 +1496,244 @@ input[type='range'] {
   background: var(--panel-hover);
   border-color: var(--accent);
 }
+
+/* ============================================================
+   PDF upload panel
+   ============================================================ */
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.pdf-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: var(--s-5);
+  margin-bottom: var(--s-5);
+}
+
+.pdf-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin: 0 0 var(--s-4);
+  font-size: 15px;
+  font-weight: 600;
+}
+.pdf-heading-icon {
+  width: 18px;
+  height: 18px;
+  color: var(--accent-2);
+}
+
+.pdf-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-2);
+  text-align: center;
+  padding: var(--s-8) var(--s-5);
+  border: 1.5px dashed var(--border-strong);
+  border-radius: var(--r-md);
+  background: var(--inset);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease),
+    transform var(--t-fast) var(--ease);
+}
+.pdf-dropzone:hover,
+.pdf-dropzone:focus-visible {
+  border-color: var(--accent);
+  background: var(--bg-elev-1);
+  outline: none;
+}
+.pdf-dropzone.drag-over {
+  border-color: var(--accent);
+  background: var(--grad-soft);
+  transform: scale(1.005);
+}
+.pdf-drop-icon {
+  width: 30px;
+  height: 30px;
+  color: var(--accent);
+}
+.pdf-drop-title {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text);
+}
+.pdf-drop-title strong {
+  font-weight: 600;
+}
+.pdf-drop-sub {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.pdf-file-card {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  background: var(--bg-elev-1);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: var(--s-3) var(--s-4);
+}
+.pdf-file-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: var(--r-sm);
+  background: var(--grad-soft);
+  color: var(--accent-2);
+}
+.pdf-file-icon svg {
+  width: 19px;
+  height: 19px;
+}
+.pdf-file-meta {
+  flex: 1;
+  min-width: 0;
+}
+.pdf-file-name {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pdf-file-sub {
+  display: block;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.pdf-remove {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  border-radius: var(--r-sm);
+  transition: color var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
+}
+.pdf-remove svg {
+  width: 17px;
+  height: 17px;
+}
+.pdf-remove:hover:not(:disabled) {
+  color: var(--danger);
+  background: var(--bg-elev-2);
+}
+.pdf-remove:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pdf-progress {
+  margin-top: var(--s-4);
+}
+.pdf-progress-bar {
+  height: 8px;
+  border-radius: var(--r-pill);
+  background: var(--inset);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.pdf-progress-fill {
+  height: 100%;
+  background: var(--grad);
+  border-radius: var(--r-pill);
+  transition: width var(--t-med) var(--ease);
+}
+.pdf-progress-label {
+  display: block;
+  margin-top: var(--s-2);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.pdf-range {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+.pdf-range-opt {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--bg-elev-1);
+  font-size: 13.5px;
+  cursor: pointer;
+  transition: border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
+}
+.pdf-range-opt:hover {
+  border-color: var(--border-strong);
+}
+.pdf-range-opt.selected {
+  border-color: var(--accent);
+  background: var(--grad-soft);
+}
+.pdf-range-opt input {
+  accent-color: var(--accent);
+}
+
+.pdf-range-inputs {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin-top: var(--s-3);
+  font-size: 13px;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+}
+.pdf-num {
+  width: 84px;
+  padding: 8px 10px;
+}
+.pdf-range-hint {
+  color: var(--text-faint);
+}
+
+.pdf-generate {
+  width: 100%;
+  height: 44px;
+  margin-top: var(--s-5);
+}
+
+.pdf-error {
+  margin-top: var(--s-4);
+}
+
+/* PDF source badge in the sidebar */
+.set-badge {
+  display: inline-block;
+  margin-left: 7px;
+  padding: 1px 7px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  border-radius: var(--r-pill);
+  background: var(--grad-soft);
+  color: var(--accent-2);
+  border: 1px solid var(--border);
+  vertical-align: 1px;
+}

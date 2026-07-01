@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react'
 import Header from './components/Header.jsx'
 import TopicForm from './components/TopicForm.jsx'
+import PdfUpload from './components/PdfUpload.jsx'
 import Sidebar from './components/Sidebar.jsx'
 import StudyView from './components/StudyView.jsx'
 import SettingsModal from './components/SettingsModal.jsx'
 import AuthModal from './components/AuthModal.jsx'
 import { AlertIcon, LogInIcon } from './components/Icons.jsx'
-import { generateFlashcards } from './services/aiService.js'
+import { generateFlashcards, generateFlashcardsFromContent } from './services/aiService.js'
 import { useAuth } from './hooks/useAuth.js'
 import {
   subscribeToDecks,
@@ -45,6 +46,7 @@ export default function App() {
   const [settings, setSettings] = useState(loadSettings)
   const [activeId, setActiveId] = useState(null)
   const [loading, setLoading] = useState(false) // card generation in-flight
+  const [genProgress, setGenProgress] = useState('') // progress label during generation
   const [decksLoading, setDecksLoading] = useState(false) // cloud decks loading
   const [error, setError] = useState('')
   const [showSettings, setShowSettings] = useState(false)
@@ -111,30 +113,70 @@ export default function App() {
 
   const activeSet = sets.find((s) => s.id === activeId) ?? null
 
+  // Persist a freshly-generated deck to Firestore (signed in) or local state (demo).
+  async function persistNewDeck(newSet) {
+    if (user) {
+      await saveDeck(user.uid, newSet) // realtime listener adds it to `sets`
+      setActiveId(newSet.id)
+    } else {
+      setSets((prev) => [newSet, ...prev])
+      setActiveId(newSet.id)
+    }
+  }
+
   async function handleGenerate(topic) {
     setLoading(true)
     setError('')
     try {
       const cards = await generateFlashcards(topic, settings)
       if (!cards.length) throw new Error('No cards were generated. Try a different topic.')
-      const newSet = {
+      await persistNewDeck({
         id: makeId(),
         topic,
         cards,
         createdAt: new Date().toISOString(),
-      }
-      if (user) {
-        // Firestore write; the realtime listener will add it to `sets`.
-        await saveDeck(user.uid, newSet)
-        setActiveId(newSet.id)
-      } else {
-        setSets((prev) => [newSet, ...prev])
-        setActiveId(newSet.id)
-      }
+        source: 'topic',
+      })
     } catch (err) {
       setError(err.message || 'Something went wrong while generating cards.')
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Generate a deck from extracted PDF content. Returns true on success so the
+  // PdfUpload panel can reset itself.
+  async function handleGeneratePdf(content, meta) {
+    setLoading(true)
+    setError('')
+    setGenProgress('')
+    try {
+      const cards = await generateFlashcardsFromContent(content, settings, {
+        onProgress: ({ current, total }) =>
+          setGenProgress(
+            total > 1 ? `Generating cards… section ${current} of ${total}` : 'Generating cards…',
+          ),
+      })
+      if (!cards.length) throw new Error('No cards were generated from this PDF.')
+      const title = meta.filename.replace(/\.pdf$/i, '')
+      await persistNewDeck({
+        id: makeId(),
+        topic: title,
+        cards,
+        createdAt: new Date().toISOString(),
+        source: 'pdf',
+        filename: meta.filename,
+        pageCount: meta.pageCount,
+        uploadDate: meta.uploadDate,
+        ...(meta.pageRange ? { pageRange: meta.pageRange } : {}),
+      })
+      return true
+    } catch (err) {
+      setError(err.message || 'Something went wrong while generating from the PDF.')
+      return false
+    } finally {
+      setLoading(false)
+      setGenProgress('')
     }
   }
 
@@ -191,6 +233,8 @@ export default function App() {
         <Sidebar sets={sets} activeId={activeId} onSelect={setActiveId} onDelete={handleDelete} />
 
         <div className="content">
+          <PdfUpload onGenerate={handleGeneratePdf} loading={loading} />
+
           <TopicForm onGenerate={handleGenerate} loading={loading} />
 
           {!user && (
@@ -215,7 +259,7 @@ export default function App() {
           )}
 
           {loading ? (
-            <LoadingState />
+            <LoadingState label={genProgress || undefined} />
           ) : decksLoading ? (
             <LoadingState label="Loading your decks…" />
           ) : (

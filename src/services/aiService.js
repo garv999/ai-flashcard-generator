@@ -23,6 +23,53 @@ function buildUserPrompt(topic, count) {
   )
 }
 
+// Prompt for generating cards from a passage of source material (e.g. a PDF).
+function buildContentPrompt(content, count) {
+  return (
+    `Using ONLY the study material below, create up to ${count} flashcards that ` +
+    `capture its most important facts, definitions, and concepts.\n` +
+    `Return ONLY a JSON array, with no markdown fences or commentary. ` +
+    `Each element must be an object with exactly two string fields: ` +
+    `"question" and "answer". Keep each answer to 1-3 sentences.\n\n` +
+    `STUDY MATERIAL:\n"""\n${content}\n"""`
+  )
+}
+
+// Chunk sizing for large documents (keeps each request well under token limits).
+const CHUNK_SIZE = 6000 // characters per chunk
+const MAX_CHUNKS = 20 // safety cap on API calls for very large PDFs
+
+// Split text into token-safe chunks, preferring paragraph boundaries.
+function chunkText(text, size = CHUNK_SIZE, maxChunks = MAX_CHUNKS) {
+  const clean = (text || '').trim()
+  if (!clean) return []
+
+  const paragraphs = clean.split(/\n{2,}/)
+  const chunks = []
+  let current = ''
+
+  const pushCurrent = () => {
+    if (current.trim()) chunks.push(current.trim())
+    current = ''
+  }
+
+  for (const para of paragraphs) {
+    if (para.length > size) {
+      // Hard-split an oversized paragraph.
+      pushCurrent()
+      for (let i = 0; i < para.length; i += size) {
+        chunks.push(para.slice(i, i + size).trim())
+      }
+      continue
+    }
+    if ((current + '\n\n' + para).length > size) pushCurrent()
+    current = current ? `${current}\n\n${para}` : para
+  }
+  pushCurrent()
+
+  return chunks.filter(Boolean).slice(0, maxChunks)
+}
+
 // Pull a JSON array out of a model response that may contain prose or code
 // fences around it.
 function extractCards(text) {
@@ -72,6 +119,33 @@ function cap(s) {
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : s
 }
 
+// Content-aware demo generator: builds believable cards from extracted text
+// by pulling out meaningful sentences. No API key required.
+function mockGenerateFromContent(content, count) {
+  const sentences = (content || '')
+    .replace(/\s+/g, ' ')
+    .split(/(?<=[.!?])\s+/)
+    .map((s) => s.trim())
+    .filter((s) => s.length >= 40 && s.length <= 320)
+
+  if (!sentences.length) {
+    return mockGenerate('this document', count)
+  }
+
+  // Spread picks across the whole passage rather than just the start.
+  const step = Math.max(1, Math.floor(sentences.length / count))
+  const cards = []
+  for (let i = 0; i < sentences.length && cards.length < count; i += step) {
+    const sentence = sentences[i]
+    const topicWords = sentence.split(' ').slice(0, 6).join(' ').replace(/[",]$/, '')
+    cards.push({
+      question: `According to the material, what is noted about “${topicWords}…”?`,
+      answer: sentence.endsWith('.') ? sentence : `${sentence}.`,
+    })
+  }
+  return cards
+}
+
 // Simulate network latency so the demo loading state is visible.
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -80,7 +154,7 @@ function delay(ms) {
 // ---------------------------------------------------------------------------
 // OpenAI
 // ---------------------------------------------------------------------------
-async function openaiGenerate(topic, count, apiKey) {
+async function openaiGenerate(userPrompt, apiKey) {
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -92,7 +166,7 @@ async function openaiGenerate(topic, count, apiKey) {
       temperature: 0.7,
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: buildUserPrompt(topic, count) },
+        { role: 'user', content: userPrompt },
       ],
     }),
   })
@@ -109,7 +183,7 @@ async function openaiGenerate(topic, count, apiKey) {
 // ---------------------------------------------------------------------------
 // Anthropic Claude
 // ---------------------------------------------------------------------------
-async function anthropicGenerate(topic, count, apiKey) {
+async function anthropicGenerate(userPrompt, apiKey, maxTokens = 1500) {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -121,9 +195,9 @@ async function anthropicGenerate(topic, count, apiKey) {
     },
     body: JSON.stringify({
       model: 'claude-sonnet-5',
-      max_tokens: 1500,
+      max_tokens: maxTokens,
       system: SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: buildUserPrompt(topic, count) }],
+      messages: [{ role: 'user', content: userPrompt }],
     }),
   })
 
@@ -148,15 +222,67 @@ export async function generateFlashcards(topic, settings) {
 
   if (provider === 'openai') {
     if (!settings.apiKey) throw new Error('Add your OpenAI API key in Settings first.')
-    return openaiGenerate(topic, count, settings.apiKey)
+    return openaiGenerate(buildUserPrompt(topic, count), settings.apiKey)
   }
 
   if (provider === 'anthropic') {
     if (!settings.apiKey) throw new Error('Add your Anthropic API key in Settings first.')
-    return anthropicGenerate(topic, count, settings.apiKey)
+    return anthropicGenerate(buildUserPrompt(topic, count), settings.apiKey)
   }
 
   // Demo mode
   await delay(900)
   return mockGenerate(topic, count)
+}
+
+// Generate flashcards from a block of source content (e.g. extracted PDF text).
+// Large content is chunked to stay under token limits, and the cards from every
+// chunk are merged (and de-duplicated) into a single list.
+// onProgress({ current, total }) reports which chunk is being processed.
+export async function generateFlashcardsFromContent(content, settings, { onProgress } = {}) {
+  const perChunk = Math.min(Math.max(Number(settings.cardCount) || 10, 1), 20)
+  const provider = settings.provider || 'demo'
+
+  if ((content || '').trim().length < 30) {
+    throw new Error('The PDF did not contain enough readable text to generate flashcards.')
+  }
+
+  // Validate keys once, up front (before making any calls).
+  if (provider === 'openai' && !settings.apiKey) {
+    throw new Error('Add your OpenAI API key in Settings first.')
+  }
+  if (provider === 'anthropic' && !settings.apiKey) {
+    throw new Error('Add your Anthropic API key in Settings first.')
+  }
+
+  const chunks = chunkText(content)
+  const merged = []
+  const seen = new Set()
+
+  for (let i = 0; i < chunks.length; i++) {
+    if (onProgress) onProgress({ current: i + 1, total: chunks.length })
+
+    let cards
+    if (provider === 'openai') {
+      cards = await openaiGenerate(buildContentPrompt(chunks[i], perChunk), settings.apiKey)
+    } else if (provider === 'anthropic') {
+      cards = await anthropicGenerate(buildContentPrompt(chunks[i], perChunk), settings.apiKey, 2000)
+    } else {
+      await delay(500)
+      cards = mockGenerateFromContent(chunks[i], perChunk)
+    }
+
+    for (const card of cards) {
+      const key = card.question.trim().toLowerCase()
+      if (!seen.has(key)) {
+        seen.add(key)
+        merged.push(card)
+      }
+    }
+  }
+
+  if (!merged.length) {
+    throw new Error('No cards could be generated from this PDF. Try a different file or page range.')
+  }
+  return merged
 }
