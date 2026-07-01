@@ -1,0 +1,20 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // A request is the owner when it is authenticated and its uid matches.
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    match /users/{userId} {
+      // No top-level profile writes are needed by this app; scope access to
+      // the user's own document tree only.
+      allow read, write: if isOwner(userId);
+
+      // Flashcard decks — each user can only access their own.
+      match /decks/{deckId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+  }
+}

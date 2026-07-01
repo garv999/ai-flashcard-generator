@@ -8,4 +8,19 @@ export default defineConfig({
     port: 5173,
     open: true,
   },
+  build: {
+    // The Firestore SDK is intentionally vendored into its own chunk; raise the
+    // warning threshold so the build output stays clean.
+    chunkSizeWarningLimit: 700,
+    rollupOptions: {
+      output: {
+        // Split large, rarely-changing vendors into their own cacheable chunks.
+        manualChunks: {
+          'firebase-auth': ['firebase/app', 'firebase/auth'],
+          'firebase-firestore': ['firebase/firestore'],
+          react: ['react', 'react-dom'],
+        },
+      },
+    },
+  },
 })

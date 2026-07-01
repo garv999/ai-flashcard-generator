@@ -27,6 +27,11 @@ export function saveSets(sets) {
   localStorage.setItem(SETS_KEY, JSON.stringify(sets))
 }
 
+// Remove locally-stored decks (used after migrating Demo data to Firestore).
+export function clearSets() {
+  localStorage.removeItem(SETS_KEY)
+}
+
 export function loadSettings() {
   return { ...DEFAULT_SETTINGS, ...safeParse(localStorage.getItem(SETTINGS_KEY), {}) }
 }
