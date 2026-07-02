@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import Header from './components/Header.jsx'
+import Ambient from './components/Ambient.jsx'
+import HeroStats from './components/HeroStats.jsx'
 import TopicForm from './components/TopicForm.jsx'
 import PdfUpload from './components/PdfUpload.jsx'
 import Sidebar from './components/Sidebar.jsx'
@@ -213,6 +215,7 @@ export default function App() {
   if (!authReady) {
     return (
       <div className="app auth-boot" aria-busy="true" aria-live="polite">
+        <Ambient />
         <div className="spinner" />
       </div>
     )
@@ -220,6 +223,7 @@ export default function App() {
 
   return (
     <div className="app">
+      <Ambient />
       <Header
         provider={settings.provider}
         onOpenSettings={() => setShowSettings(true)}
@@ -228,6 +232,8 @@ export default function App() {
         onLogout={handleLogout}
         authBusy={authBusy}
       />
+
+      <HeroStats sets={sets} />
 
       <main className="main">
         <Sidebar sets={sets} activeId={activeId} onSelect={setActiveId} onDelete={handleDelete} />
