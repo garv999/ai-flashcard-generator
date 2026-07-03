@@ -1,6 +1,8 @@
 import { TrashIcon } from './Icons.jsx'
+import { deckDueCount } from '../services/srs.js'
 
 export default function Sidebar({ sets, activeId, onSelect, onDelete }) {
+  const now = Date.now()
   return (
     <aside className="sidebar" aria-label="Saved flashcard sets">
       <h2>
@@ -14,6 +16,7 @@ export default function Sidebar({ sets, activeId, onSelect, onDelete }) {
         <ul className="set-list">
           {sets.map((set) => {
             const isActive = set.id === activeId
+            const due = deckDueCount(set, now)
             return (
               <li
                 key={set.id}
@@ -35,6 +38,7 @@ export default function Sidebar({ sets, activeId, onSelect, onDelete }) {
                       {set.source === 'pdf' && set.pageCount
                         ? ` · ${set.pageCount} page${set.pageCount === 1 ? '' : 's'}`
                         : ''}
+                      {due > 0 && <span className="set-due">{due} due</span>}
                     </span>
                   </span>
                 </button>

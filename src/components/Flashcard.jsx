@@ -1,13 +1,20 @@
 import { useState, useEffect } from 'react'
 import { RotateIcon } from './Icons.jsx'
 
-export default function Flashcard({ card, index, total }) {
+export default function Flashcard({ card, index, total, onFlip }) {
   const [flipped, setFlipped] = useState(false)
 
   // Reset to the question side whenever we move to a different card.
   useEffect(() => {
     setFlipped(false)
   }, [card])
+
+  // Notify an optional parent (e.g. the review session) when the flip changes.
+  // No-op for callers that don't pass onFlip, so existing behavior is unchanged.
+  useEffect(() => {
+    onFlip?.(flipped)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flipped])
 
   function toggle() {
     setFlipped((f) => !f)

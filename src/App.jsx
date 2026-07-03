@@ -10,6 +10,7 @@ import SettingsModal from './components/SettingsModal.jsx'
 import AuthModal from './components/AuthModal.jsx'
 import { AlertIcon, LogInIcon } from './components/Icons.jsx'
 import { generateFlashcards, generateFlashcardsFromContent } from './services/aiService.js'
+import { schedule } from './services/srs.js'
 import { useAuth } from './hooks/useAuth.js'
 import {
   subscribeToDecks,
@@ -200,6 +201,26 @@ export default function App() {
     }
   }
 
+  // Record a spaced-repetition rating for one card and persist the new schedule.
+  // Updates local state optimistically; signed-in users also write to Firestore.
+  async function handleRateCard(deckId, cardIndex, rating) {
+    const now = Date.now()
+    const deck = sets.find((d) => d.id === deckId)
+    if (!deck || !deck.cards[cardIndex]) return
+    const cards = deck.cards.map((c, i) =>
+      i === cardIndex ? { ...c, srs: schedule(c, rating, now) } : c,
+    )
+    const updatedDeck = { ...deck, cards }
+    setSets((prev) => prev.map((d) => (d.id === deckId ? updatedDeck : d)))
+    if (user) {
+      try {
+        await saveDeck(user.uid, updatedDeck)
+      } catch (err) {
+        console.error('[Flashcards] Failed to save review progress:', err)
+      }
+    }
+  }
+
   async function handleLogout() {
     setAuthBusy(true)
     try {
@@ -269,7 +290,7 @@ export default function App() {
           ) : decksLoading ? (
             <LoadingState label="Loading your decks…" />
           ) : (
-            <StudyView set={activeSet} />
+            <StudyView set={activeSet} onRate={handleRateCard} />
           )}
         </div>
       </main>

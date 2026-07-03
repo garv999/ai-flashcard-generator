@@ -1,13 +1,17 @@
 import { useState, useEffect, useCallback } from 'react'
 import Flashcard from './Flashcard.jsx'
+import ReviewSession from './ReviewSession.jsx'
 import { ChevronLeftIcon, ChevronRightIcon, CardsIcon } from './Icons.jsx'
+import { deckDueCount } from '../services/srs.js'
 
-export default function StudyView({ set }) {
+export default function StudyView({ set, onRate }) {
   const [index, setIndex] = useState(0)
+  const [mode, setMode] = useState('browse') // 'browse' | 'review'
 
-  // Reset to the first card when switching sets.
+  // Reset to the first card and back to browsing when switching sets.
   useEffect(() => {
     setIndex(0)
+    setMode('browse')
   }, [set?.id])
 
   const total = set?.cards.length ?? 0
@@ -15,9 +19,9 @@ export default function StudyView({ set }) {
   const prev = useCallback(() => setIndex((i) => (i - 1 + total) % total), [total])
   const next = useCallback(() => setIndex((i) => (i + 1) % total), [total])
 
-  // Arrow-key navigation between cards (ignored while typing in a field).
+  // Arrow-key navigation between cards — browse mode only (review has its own keys).
   useEffect(() => {
-    if (!set || total <= 1) return
+    if (!set || mode !== 'browse' || total <= 1) return
     function onKey(e) {
       const tag = document.activeElement?.tagName
       if (tag === 'INPUT' || tag === 'TEXTAREA') return
@@ -31,7 +35,7 @@ export default function StudyView({ set }) {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [set, total, prev, next])
+  }, [set, mode, total, prev, next])
 
   if (!set) {
     return (
@@ -48,6 +52,7 @@ export default function StudyView({ set }) {
     )
   }
 
+  const due = deckDueCount(set, Date.now())
   const card = set.cards[index]
   const progress = total > 0 ? ((index + 1) / total) * 100 : 0
 
@@ -55,48 +60,79 @@ export default function StudyView({ set }) {
     <section className="study-view" aria-label={`Studying: ${set.topic}`}>
       <div className="study-header">
         <h2 title={set.topic}>{set.topic}</h2>
-        <span className="progress-pill">
-          Card {index + 1} of {total}
-        </span>
-      </div>
 
-      <div
-        className="progress-track"
-        role="progressbar"
-        aria-valuemin={1}
-        aria-valuemax={total}
-        aria-valuenow={index + 1}
-        aria-label="Deck progress"
-      >
-        <div className="progress-fill" style={{ width: `${progress}%` }} />
-      </div>
-
-      <Flashcard card={card} index={index} total={total} />
-
-      <div className="study-controls">
-        <button type="button" className="btn-nav" onClick={prev} disabled={total <= 1}>
-          <ChevronLeftIcon />
-          <span>Previous</span>
-        </button>
-
-        <div className="dots" role="group" aria-label="Jump to card">
-          {set.cards.map((_, i) => (
-            <button
-              key={i}
-              type="button"
-              className={`dot ${i === index ? 'active' : ''}`}
-              aria-label={`Go to card ${i + 1}`}
-              aria-current={i === index ? 'true' : undefined}
-              onClick={() => setIndex(i)}
-            />
-          ))}
+        <div className="study-modes" role="tablist" aria-label="Study mode">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mode === 'browse'}
+            className={`study-mode ${mode === 'browse' ? 'active' : ''}`}
+            onClick={() => setMode('browse')}
+          >
+            Browse
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mode === 'review'}
+            className={`study-mode ${mode === 'review' ? 'active' : ''}`}
+            onClick={() => setMode('review')}
+          >
+            Review
+            {due > 0 && <span className="due-pill">{due}</span>}
+          </button>
         </div>
-
-        <button type="button" className="btn-nav" onClick={next} disabled={total <= 1}>
-          <span>Next</span>
-          <ChevronRightIcon />
-        </button>
       </div>
+
+      {mode === 'review' ? (
+        <ReviewSession set={set} onRate={onRate} onExit={() => setMode('browse')} />
+      ) : (
+        <>
+          <div className="browse-meta">
+            <span className="progress-pill">
+              Card {index + 1} of {total}
+            </span>
+          </div>
+
+          <div
+            className="progress-track"
+            role="progressbar"
+            aria-valuemin={1}
+            aria-valuemax={total}
+            aria-valuenow={index + 1}
+            aria-label="Deck progress"
+          >
+            <div className="progress-fill" style={{ width: `${progress}%` }} />
+          </div>
+
+          <Flashcard card={card} index={index} total={total} />
+
+          <div className="study-controls">
+            <button type="button" className="btn-nav" onClick={prev} disabled={total <= 1}>
+              <ChevronLeftIcon />
+              <span>Previous</span>
+            </button>
+
+            <div className="dots" role="group" aria-label="Jump to card">
+              {set.cards.map((_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  className={`dot ${i === index ? 'active' : ''}`}
+                  aria-label={`Go to card ${i + 1}`}
+                  aria-current={i === index ? 'true' : undefined}
+                  onClick={() => setIndex(i)}
+                />
+              ))}
+            </div>
+
+            <button type="button" className="btn-nav" onClick={next} disabled={total <= 1}>
+              <span>Next</span>
+              <ChevronRightIcon />
+            </button>
+          </div>
+        </>
+      )}
     </section>
   )
 }

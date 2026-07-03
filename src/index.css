@@ -2163,3 +2163,289 @@ input[type='range'] {
     transition: none;
   }
 }
+
+/* ============================================================
+   Spaced repetition — mode toggle, due badges, review session
+   ============================================================ */
+
+/* Browse / Review segmented control in the study header */
+.study-modes {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--inset);
+  border: 1px solid var(--border);
+  border-radius: var(--r-pill);
+  flex-shrink: 0;
+}
+.study-mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 15px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: var(--r-pill);
+  transition: color var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
+}
+.study-mode:hover {
+  color: var(--text);
+}
+.study-mode.active {
+  color: #fff;
+  background: var(--grad);
+  box-shadow: var(--shadow-accent);
+}
+
+.due-pill {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+.study-mode:not(.active) .due-pill {
+  background: var(--danger);
+  color: #fff;
+}
+
+.browse-meta {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Due count in the sidebar */
+.set-due {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 0 7px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 16px;
+  border-radius: var(--r-pill);
+  background: var(--danger-soft);
+  color: #ffb0c1;
+  border: 1px solid rgba(255, 107, 138, 0.35);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Review session */
+.review {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  animation: rise-in var(--t-med) var(--ease);
+}
+
+.review-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+.review-count {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.review-exit {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: var(--r-pill);
+  transition: color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease),
+    background var(--t-fast) var(--ease);
+}
+.review-exit:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+  background: var(--panel-hover);
+}
+
+.review-progress {
+  height: 5px;
+  background: var(--bg-elev-1);
+  border-radius: var(--r-pill);
+  overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+.review-progress-fill {
+  height: 100%;
+  background: var(--grad);
+  border-radius: var(--r-pill);
+  box-shadow: 0 0 12px rgba(109, 107, 255, 0.6);
+  transition: width var(--t-med) var(--ease);
+}
+
+/* Rating buttons (Again / Hard / Good / Easy) */
+.review-actions {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--s-2);
+  animation: rise-in var(--t-med) var(--ease);
+}
+.rate-btn {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 13px 8px 11px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border-strong);
+  background: var(--bg-elev-1);
+  color: var(--text);
+  overflow: hidden;
+  transition: transform 0.18s var(--ease-spring), border-color var(--t-fast) var(--ease),
+    background var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);
+}
+.rate-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity var(--t-fast) var(--ease);
+}
+.rate-btn:hover {
+  transform: translateY(-2px);
+}
+.rate-btn:active {
+  transform: translateY(0);
+}
+.rate-label {
+  font-size: 14px;
+  font-weight: 700;
+}
+.rate-interval {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.rate-key {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-faint);
+}
+
+.rate-again {
+  --rc: var(--danger);
+}
+.rate-hard {
+  --rc: #f0a34a;
+}
+.rate-good {
+  --rc: var(--accent-2);
+}
+.rate-easy {
+  --rc: var(--ok);
+}
+.rate-btn:hover {
+  border-color: var(--rc);
+  box-shadow: 0 8px 22px -10px var(--rc);
+}
+.rate-btn:hover .rate-label {
+  color: var(--rc);
+}
+
+.review-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+  padding: 14px;
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: center;
+}
+.review-hint svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+/* Caught-up / session complete */
+.review-done {
+  text-align: center;
+  padding: 60px var(--s-6);
+  background: radial-gradient(420px 200px at 50% 0%, var(--accent-soft), transparent 70%),
+    var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--edge-light);
+  animation: rise-in var(--t-med) var(--ease);
+}
+.review-done-art {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto var(--s-4);
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-lg);
+  background: var(--grad-soft);
+  color: var(--accent-2);
+  box-shadow: var(--edge-light);
+}
+.review-done-art svg {
+  width: 34px;
+  height: 34px;
+}
+.review-done h3 {
+  margin: 0 0 var(--s-2);
+  font-size: 20px;
+}
+.review-done p {
+  margin: 0 auto;
+  max-width: 380px;
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.review-next {
+  margin-top: var(--s-1) !important;
+  color: var(--text-faint) !important;
+  font-size: 13px !important;
+}
+.review-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: var(--s-5);
+}
+.review-back svg {
+  width: 16px;
+  height: 16px;
+}
+
+@media (max-width: 560px) {
+  .study-header {
+    flex-wrap: wrap;
+    gap: var(--s-3);
+  }
+  .review-actions {
+    gap: 6px;
+  }
+  .rate-btn {
+    padding: 11px 4px 9px;
+  }
+  .rate-key {
+    display: none;
+  }
+}
