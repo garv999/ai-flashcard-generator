@@ -170,3 +170,40 @@ export function GoogleIcon(props) {
     </svg>
   )
 }
+
+export function ChartIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M3 3v18h18" />
+      <path d="M7 15v3M12 10v8M17 6v12" />
+    </svg>
+  )
+}
+
+export function FlameIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M12 2s5 4 5 9a5 5 0 0 1-10 0c0-1.5.6-2.8 1.3-3.8C9 8.5 12 7 12 2z" />
+      <path d="M12 22a3.5 3.5 0 0 0 3.5-3.5c0-2-1.5-3-1.5-3s-.7 1.2-2 1.2c-1.5 0-1.8-1.7-1.8-1.7S9 16 9 18.5A3.5 3.5 0 0 0 12 22z" />
+    </svg>
+  )
+}
+
+export function TargetIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="12" cy="12" r="5" />
+      <circle cx="12" cy="12" r="1.5" />
+    </svg>
+  )
+}
+
+export function LayersIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M12 3 2 8l10 5 10-5-10-5z" />
+      <path d="M2 13l10 5 10-5M2 18l10 5 10-5" />
+    </svg>
+  )
+}

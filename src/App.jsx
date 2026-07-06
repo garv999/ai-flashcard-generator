@@ -8,9 +8,11 @@ import Sidebar from './components/Sidebar.jsx'
 import StudyView from './components/StudyView.jsx'
 import SettingsModal from './components/SettingsModal.jsx'
 import AuthModal from './components/AuthModal.jsx'
-import { AlertIcon, LogInIcon } from './components/Icons.jsx'
+import AnalyticsModal from './components/AnalyticsModal.jsx'
+import { AlertIcon, LogInIcon, CloseIcon } from './components/Icons.jsx'
 import { generateFlashcards, generateFlashcardsFromContent } from './services/aiService.js'
 import { schedule } from './services/srs.js'
+import { recordReview, loadLocalStats, saveLocalStats } from './services/analytics.js'
 import { useAuth } from './hooks/useAuth.js'
 import {
   subscribeToDecks,
@@ -54,10 +56,18 @@ export default function App() {
   const [error, setError] = useState('')
   const [showSettings, setShowSettings] = useState(false)
   const [showAuth, setShowAuth] = useState(false)
+  const [showAnalytics, setShowAnalytics] = useState(false)
   const [authBusy, setAuthBusy] = useState(false) // logout in-flight
+  const [stats, setStats] = useState(loadLocalStats) // study analytics (device-local)
+  const [cloudWarning, setCloudWarning] = useState(false) // cloud sync degraded
 
   // Settings stay device-local (they hold the provider + API key).
   useEffect(() => saveSettings(settings), [settings])
+
+  // Study analytics are kept on this device.
+  useEffect(() => {
+    saveLocalStats(stats)
+  }, [stats])
 
   // Load decks from the right source based on auth state.
   useEffect(() => {
@@ -116,14 +126,19 @@ export default function App() {
 
   const activeSet = sets.find((s) => s.id === activeId) ?? null
 
-  // Persist a freshly-generated deck to Firestore (signed in) or local state (demo).
+  // Persist a freshly-generated deck. The deck is shown immediately either way,
+  // so a backend hiccup (e.g. a cloud permission error) never loses the user's
+  // work — signed-in users just get a soft "saved on this device" notice.
   async function persistNewDeck(newSet) {
+    setSets((prev) => (prev.some((d) => d.id === newSet.id) ? prev : [newSet, ...prev]))
+    setActiveId(newSet.id)
     if (user) {
-      await saveDeck(user.uid, newSet) // realtime listener adds it to `sets`
-      setActiveId(newSet.id)
-    } else {
-      setSets((prev) => [newSet, ...prev])
-      setActiveId(newSet.id)
+      try {
+        await saveDeck(user.uid, newSet) // realtime listener reconciles on success
+      } catch (err) {
+        console.error('[Flashcards] Cloud save failed; deck kept on this device:', err)
+        setCloudWarning(true)
+      }
     }
   }
 
@@ -212,11 +227,14 @@ export default function App() {
     )
     const updatedDeck = { ...deck, cards }
     setSets((prev) => prev.map((d) => (d.id === deckId ? updatedDeck : d)))
+    // Log the review for study analytics (streaks, retention, activity).
+    setStats((prev) => recordReview(prev, rating, now))
     if (user) {
       try {
         await saveDeck(user.uid, updatedDeck)
       } catch (err) {
         console.error('[Flashcards] Failed to save review progress:', err)
+        setCloudWarning(true)
       }
     }
   }
@@ -248,6 +266,7 @@ export default function App() {
       <Header
         provider={settings.provider}
         onOpenSettings={() => setShowSettings(true)}
+        onOpenAnalytics={() => setShowAnalytics(true)}
         user={user}
         onSignIn={() => setShowAuth(true)}
         onLogout={handleLogout}
@@ -278,6 +297,24 @@ export default function App() {
             </div>
           )}
 
+          {cloudWarning && (
+            <div className="banner warn" role="status">
+              <AlertIcon />
+              <span>
+                Cloud sync is unavailable right now — your decks and progress are being saved on
+                this device.
+              </span>
+              <button
+                type="button"
+                className="banner-dismiss"
+                onClick={() => setCloudWarning(false)}
+                aria-label="Dismiss"
+              >
+                <CloseIcon />
+              </button>
+            </div>
+          )}
+
           {error && (
             <div className="banner error" role="alert">
               <AlertIcon />
@@ -304,6 +341,14 @@ export default function App() {
       )}
 
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
+
+      {showAnalytics && (
+        <AnalyticsModal
+          sets={sets}
+          stats={stats}
+          onClose={() => setShowAnalytics(false)}
+        />
+      )}
 
       <footer className="footer">
         {user

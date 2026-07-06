@@ -1,6 +1,14 @@
-import { BoltIcon, SettingsIcon, LogInIcon, LogOutIcon, UserIcon } from './Icons.jsx'
+import { BoltIcon, SettingsIcon, LogInIcon, LogOutIcon, UserIcon, ChartIcon } from './Icons.jsx'
 
-export default function Header({ provider, onOpenSettings, user, onSignIn, onLogout, authBusy }) {
+export default function Header({
+  provider,
+  onOpenSettings,
+  onOpenAnalytics,
+  user,
+  onSignIn,
+  onLogout,
+  authBusy,
+}) {
   const isLive = provider !== 'demo'
   const label =
     provider === 'openai' ? 'OpenAI' : provider === 'anthropic' ? 'Claude' : 'Demo mode'
@@ -20,6 +28,15 @@ export default function Header({ provider, onOpenSettings, user, onSignIn, onLog
       </div>
 
       <div className="header-actions">
+        <button
+          className="icon-btn"
+          onClick={onOpenAnalytics}
+          aria-label="Study analytics"
+          title="Study analytics"
+        >
+          <ChartIcon />
+        </button>
+
         <button
           className="settings-btn"
           onClick={onOpenSettings}

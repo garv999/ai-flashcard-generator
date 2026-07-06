@@ -6,13 +6,16 @@ service cloud.firestore {
       return request.auth != null && request.auth.uid == userId;
     }
 
+    // A user may read and write anything under their own document tree
+    // (their profile doc plus the /decks subcollection). Recursive wildcard
+    // so decks and any future per-user data are covered by one rule.
+    //
+    // NOTE: these rules must be DEPLOYED to take effect:
+    //   firebase deploy --only firestore:rules
     match /users/{userId} {
-      // No top-level profile writes are needed by this app; scope access to
-      // the user's own document tree only.
       allow read, write: if isOwner(userId);
 
-      // Flashcard decks — each user can only access their own.
-      match /decks/{deckId} {
+      match /{document=**} {
         allow read, write: if isOwner(userId);
       }
     }
