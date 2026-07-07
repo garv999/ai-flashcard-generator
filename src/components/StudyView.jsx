@@ -39,7 +39,7 @@ export default function StudyView({ set, onRate }) {
 
   if (!set) {
     return (
-      <div className="study-empty">
+      <div className="study-empty" data-reveal="up">
         <div className="study-empty-art" aria-hidden="true">
           <CardsIcon />
         </div>

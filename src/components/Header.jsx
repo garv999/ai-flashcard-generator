@@ -16,7 +16,7 @@ export default function Header({
   const displayName = user?.displayName || user?.email || 'Account'
 
   return (
-    <header className="header">
+    <header className="header" data-reveal="down">
       <div className="brand">
         <div className="brand-mark" aria-hidden="true">
           <BoltIcon />

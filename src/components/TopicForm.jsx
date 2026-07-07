@@ -22,7 +22,7 @@ export default function TopicForm({ onGenerate, loading }) {
   }
 
   return (
-    <form className="topic-form" onSubmit={handleSubmit}>
+    <form className="topic-form" onSubmit={handleSubmit} data-reveal="up">
       <label htmlFor="topic">What do you want to study?</label>
       <div className="topic-input-row">
         <input

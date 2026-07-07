@@ -4,7 +4,7 @@ import { deckDueCount } from '../services/srs.js'
 export default function Sidebar({ sets, activeId, onSelect, onDelete }) {
   const now = Date.now()
   return (
-    <aside className="sidebar" aria-label="Saved flashcard sets">
+    <aside className="sidebar" aria-label="Saved flashcard sets" data-reveal="left">
       <h2>
         Your Sets
         {sets.length > 0 && <span className="count">{sets.length}</span>}

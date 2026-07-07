@@ -14,6 +14,8 @@ import { generateFlashcards, generateFlashcardsFromContent } from './services/ai
 import { schedule } from './services/srs.js'
 import { recordReview, loadLocalStats, saveLocalStats } from './services/analytics.js'
 import { useAuth } from './hooks/useAuth.js'
+import useScrollReveal from './hooks/useScrollReveal.js'
+import useBackgroundParallax from './hooks/useBackgroundParallax.js'
 import {
   subscribeToDecks,
   saveDeck,
@@ -46,6 +48,8 @@ function LoadingState({ label = 'Generating your flashcards…' }) {
 
 export default function App() {
   const { user, authReady, logout } = useAuth()
+  useScrollReveal()
+  useBackgroundParallax()
 
   const [sets, setSets] = useState([])
   const [settings, setSettings] = useState(loadSettings)
@@ -284,7 +288,7 @@ export default function App() {
           <TopicForm onGenerate={handleGenerate} loading={loading} />
 
           {!user && (
-            <div className="banner demo-hint" role="note">
+            <div className="banner demo-hint" role="note" data-reveal="up">
               <span className="demo-hint-text">
                 <span>
                   <strong>Demo mode.</strong> Decks are saved only in this browser.
@@ -350,7 +354,7 @@ export default function App() {
         />
       )}
 
-      <footer className="footer">
+      <footer className="footer" data-reveal="up">
         {user
           ? `Signed in as ${user.displayName || user.email} · Decks synced to the cloud`
           : 'Demo mode · Flashcards saved locally in your browser'}

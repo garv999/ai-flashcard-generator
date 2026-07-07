@@ -4,42 +4,44 @@
    AI SaaS products (Linear / Vercel / Raycast).
    ============================================================ */
 :root {
-  /* Surfaces — deepest background up to raised panels */
-  --bg: #05060c;
-  --bg-elev-1: #10121d;
-  --bg-elev-2: #171a29;
-  --panel: #0f111b;
-  --panel-hover: #161927;
-  --inset: #0a0b13;
+  color-scheme: light;
 
-  /* Frosted-glass surfaces that let the cinematic scene show through */
-  --glass: rgba(15, 17, 28, 0.66);
-  --glass-strong: rgba(18, 20, 32, 0.86);
-  --glass-blur: blur(18px) saturate(1.35);
+  /* Surfaces — page background up to raised panels */
+  --bg: #f6f7fb;
+  --bg-elev-1: #eef1f7;
+  --bg-elev-2: #e5e9f2;
+  --panel: #ffffff;
+  --panel-hover: #f6f8fc;
+  --inset: #f2f4f9;
 
-  /* Translucent hairline borders — read correctly over any surface */
-  --border: rgba(255, 255, 255, 0.07);
-  --border-strong: rgba(255, 255, 255, 0.14);
-  --edge-light: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  /* Frosted-glass surfaces */
+  --glass: rgba(255, 255, 255, 0.72);
+  --glass-strong: rgba(255, 255, 255, 0.9);
+  --glass-blur: blur(16px) saturate(1.08);
+
+  /* Hairline borders — dark translucent, read correctly on light surfaces */
+  --border: rgba(15, 23, 42, 0.09);
+  --border-strong: rgba(15, 23, 42, 0.16);
+  --edge-light: inset 0 1px 0 rgba(255, 255, 255, 0.6);
 
   /* Text */
-  --text: #f3f4fb;
-  --text-muted: #a2a8c6;
-  --text-faint: #6a7091;
+  --text: #0f172a;
+  --text-muted: #4b5568;
+  --text-faint: #94a3b8;
 
   /* Brand / accents */
-  --accent: #8b74ff;
-  --accent-2: #3fc8ff;
-  --accent-soft: rgba(139, 116, 255, 0.16);
-  --accent-ring: rgba(139, 116, 255, 0.55);
-  --danger: #ff6b8a;
-  --danger-soft: rgba(255, 107, 138, 0.12);
-  --ok: #3ddba3;
-  --dot-idle: rgba(255, 255, 255, 0.16);
+  --accent: #4f46e5;
+  --accent-2: #2563eb;
+  --accent-soft: rgba(79, 70, 229, 0.1);
+  --accent-ring: rgba(79, 70, 229, 0.4);
+  --danger: #dc2626;
+  --danger-soft: rgba(220, 38, 38, 0.08);
+  --ok: #16a34a;
+  --dot-idle: rgba(15, 23, 42, 0.16);
 
-  --grad: linear-gradient(135deg, #9b6bff 0%, #6d6bff 42%, #3fc8ff 100%);
-  --grad-text: linear-gradient(120deg, #ffffff 0%, #cfd3ff 60%, #a9e5ff 100%);
-  --grad-soft: linear-gradient(135deg, rgba(139, 116, 255, 0.18), rgba(63, 200, 255, 0.1));
+  --grad: linear-gradient(135deg, #6366f1 0%, #4f46e5 45%, #2563eb 100%);
+  --grad-text: linear-gradient(120deg, #1e293b 0%, #4f46e5 60%, #2563eb 100%);
+  --grad-soft: linear-gradient(135deg, rgba(79, 70, 229, 0.12), rgba(37, 99, 235, 0.06));
 
   /* Radii */
   --r-sm: 9px;
@@ -58,12 +60,12 @@
   --s-8: 32px;
   --s-10: 40px;
 
-  /* Elevation — layered, with a colored ambient tint */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.3), 0 14px 34px rgba(0, 0, 0, 0.42);
-  --shadow-lg: 0 8px 12px rgba(0, 0, 0, 0.3), 0 34px 80px rgba(0, 0, 0, 0.6);
-  --shadow-accent: 0 8px 24px rgba(109, 107, 255, 0.4);
-  --glow: 0 10px 40px rgba(109, 107, 255, 0.28);
+  /* Elevation — soft, neutral shadows for a clean light UI */
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 1px 3px rgba(15, 23, 42, 0.06), 0 10px 24px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 12px 24px rgba(15, 23, 42, 0.1), 0 32px 64px rgba(15, 23, 42, 0.14);
+  --shadow-accent: 0 8px 20px rgba(79, 70, 229, 0.28);
+  --glow: 0 8px 30px rgba(79, 70, 229, 0.18);
 
   /* Motion */
   --ease: cubic-bezier(0.4, 0.2, 0.2, 1);
@@ -110,22 +112,24 @@ body {
   overflow: hidden;
   pointer-events: none;
   background:
-    radial-gradient(1200px 720px at 50% -10%, #14162a 0%, transparent 60%),
-    radial-gradient(900px 600px at 50% 118%, #0a1220 0%, transparent 60%),
-    var(--bg);
+    radial-gradient(1000px 640px at 88% -8%, rgba(99, 102, 241, 0.12), transparent 62%),
+    radial-gradient(820px 560px at 2% 6%, rgba(37, 99, 235, 0.07), transparent 58%),
+    linear-gradient(180deg, #fbfcfe 0%, var(--bg) 55%);
 }
 
-/* Drifting aurora light */
+/* Soft drifting tint — very subtle on a light surface.
+   Parallaxes upward as the page scrolls (--sy from useBackgroundParallax). */
 .scene-aurora {
   position: absolute;
   inset: -25%;
   background:
-    radial-gradient(closest-side, rgba(139, 116, 255, 0.5), transparent) 18% 12% / 42% 42% no-repeat,
-    radial-gradient(closest-side, rgba(63, 200, 255, 0.4), transparent) 82% 8% / 40% 40% no-repeat,
-    radial-gradient(closest-side, rgba(109, 107, 255, 0.34), transparent) 55% 30% / 46% 46% no-repeat;
-  filter: blur(70px);
-  opacity: 0.7;
-  animation: aurora-drift 22s var(--ease) infinite alternate;
+    radial-gradient(closest-side, rgba(99, 102, 241, 0.14), transparent) 20% 12% / 46% 46% no-repeat,
+    radial-gradient(closest-side, rgba(37, 99, 235, 0.1), transparent) 82% 6% / 42% 42% no-repeat;
+  filter: blur(80px);
+  opacity: 0.9;
+  translate: 0 calc(var(--sy, 0px) * -0.14);
+  will-change: translate;
+  animation: aurora-drift 26s var(--ease) infinite alternate;
 }
 
 @keyframes aurora-drift {
@@ -140,54 +144,47 @@ body {
   }
 }
 
-/* Perspective "horizon" grid receding to a glowing vanishing point */
+/* Subtle flat blueprint grid, fading toward the centre.
+   Drifts down and grows more visible as the page scrolls. */
 .scene-grid {
   position: absolute;
-  left: 50%;
-  bottom: 0;
-  width: 240%;
-  height: 52%;
-  transform: translateX(-50%) perspective(420px) rotateX(66deg);
-  transform-origin: 50% 100%;
+  inset: -10% 0;
   background-image:
-    linear-gradient(to right, rgba(150, 130, 255, 0.38) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(150, 130, 255, 0.38) 1px, transparent 1px);
-  background-size: 56px 56px;
-  -webkit-mask-image: linear-gradient(to top, #000 0%, transparent 80%);
-  mask-image: linear-gradient(to top, #000 0%, transparent 80%);
-  animation: grid-flow 8s linear infinite;
-  opacity: 0.65;
+    linear-gradient(rgba(15, 23, 42, 0.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 23, 42, 0.028) 1px, transparent 1px);
+  background-size: 46px 46px;
+  -webkit-mask-image: radial-gradient(circle at 50% 22%, #000 0%, transparent 72%);
+  mask-image: radial-gradient(circle at 50% 22%, #000 0%, transparent 72%);
+  translate: 0 calc(var(--sy, 0px) * 0.08);
+  opacity: calc(0.55 + var(--sp, 0) * 0.45);
+  will-change: translate, opacity;
 }
 
-@keyframes grid-flow {
-  to {
-    background-position: 0 56px;
-  }
-}
-
-/* Glow band sitting on the horizon line */
+/* Accent glow that rises up and reveals itself as you scroll the page */
 .scene-glow {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 46%;
-  height: 220px;
-  background: radial-gradient(60% 100% at 50% 100%, rgba(109, 107, 255, 0.35), transparent 70%);
-  filter: blur(10px);
+  left: 50%;
+  bottom: -14%;
+  width: 920px;
+  height: 920px;
+  margin-left: -460px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(79, 70, 229, 0.14), transparent 60%);
+  filter: blur(40px);
+  translate: 0 calc(var(--sy, 0px) * -0.28);
+  opacity: calc(0.15 + var(--sp, 0) * 0.85);
+  will-change: translate, opacity;
 }
 
-/* Spotlight vignette darkening the edges */
+/* Gentle edge fade for depth */
 .scene-vignette {
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(120% 80% at 50% 0%, transparent 46%, rgba(3, 4, 9, 0.5) 100%),
-    radial-gradient(120% 90% at 50% 128%, transparent 62%, rgba(3, 4, 9, 0.55) 100%);
+  background: radial-gradient(120% 100% at 50% 120%, transparent 62%, rgba(15, 23, 42, 0.04) 100%);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .scene-aurora,
-  .scene-grid {
+  .scene-aurora {
     animation: none;
   }
 }
@@ -209,26 +206,26 @@ a {
 }
 
 ::selection {
-  background: rgba(139, 116, 255, 0.3);
+  background: rgba(99, 102, 241, 0.3);
 }
 
 /* Custom scrollbars */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
+  scrollbar-color: rgba(15, 23, 42, 0.2) transparent;
 }
 *::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
 *::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(15, 23, 42, 0.2);
   border-radius: var(--r-pill);
   border: 3px solid transparent;
   background-clip: content-box;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.24);
+  background: rgba(15, 23, 42, 0.32);
   background-clip: content-box;
 }
 
@@ -532,7 +529,7 @@ a {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  text-shadow: 0 0 34px rgba(109, 107, 255, 0.35);
+  text-shadow: 0 0 34px rgba(79, 70, 229, 0.35);
 }
 
 .stat-label {
@@ -566,7 +563,7 @@ a {
 
 .count {
   background: var(--accent-soft);
-  color: #cabfff;
+  color: var(--accent);
   font-size: 11px;
   font-weight: 700;
   padding: 2px 8px;
@@ -855,18 +852,18 @@ a {
 
 .banner.error {
   background: var(--danger-soft);
-  border: 1px solid rgba(255, 107, 138, 0.4);
-  color: #ffb0c1;
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  color: #b91c1c;
 }
 
 .banner.warn {
   align-items: center;
-  background: rgba(240, 163, 74, 0.1);
-  border: 1px solid rgba(240, 163, 74, 0.4);
-  color: #f3c18a;
+  background: rgba(217, 119, 6, 0.08);
+  border: 1px solid rgba(217, 119, 6, 0.3);
+  color: #92400e;
 }
 .banner.warn svg {
-  color: #f0a34a;
+  color: #d97706;
 }
 .banner-dismiss {
   margin-left: auto;
@@ -884,7 +881,7 @@ a {
 }
 .banner-dismiss:hover {
   opacity: 1;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(15, 23, 42, 0.06);
 }
 .banner-dismiss svg {
   width: 15px;
@@ -1037,7 +1034,7 @@ a {
   height: 100%;
   background: var(--grad);
   border-radius: var(--r-pill);
-  box-shadow: 0 0 12px rgba(109, 107, 255, 0.6);
+  box-shadow: 0 0 12px rgba(79, 70, 229, 0.6);
   transition: width var(--t-med) var(--ease);
 }
 
@@ -1111,13 +1108,13 @@ a {
 }
 
 .flashcard-front {
-  background: linear-gradient(165deg, #161927 0%, var(--panel) 55%, #0c0e18 100%);
+  background: linear-gradient(165deg, #ffffff 0%, #fafbff 55%, #f4f6fc 100%);
 }
 
 .flashcard-back {
   background:
-    radial-gradient(600px 300px at 50% 0%, rgba(139, 116, 255, 0.18), transparent 60%),
-    linear-gradient(165deg, #1a1730 0%, var(--panel) 60%, #0c0e18 100%);
+    radial-gradient(600px 300px at 50% 0%, rgba(79, 70, 229, 0.1), transparent 60%),
+    linear-gradient(165deg, #ffffff 0%, #f6f5ff 60%, #eef1fb 100%);
   border-color: var(--border-strong);
   transform: rotateY(180deg);
 }
@@ -1127,7 +1124,7 @@ a {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: radial-gradient(120% 80% at 50% -10%, rgba(255, 255, 255, 0.06), transparent 55%);
+  background: radial-gradient(120% 80% at 50% -10%, rgba(15, 23, 42, 0.015), transparent 55%);
   pointer-events: none;
 }
 
@@ -1246,7 +1243,7 @@ a {
 .dot.active {
   background: var(--grad);
   transform: scale(1.4);
-  box-shadow: 0 0 10px rgba(109, 107, 255, 0.7);
+  box-shadow: 0 0 10px rgba(79, 70, 229, 0.7);
 }
 
 /* ============================================================
@@ -1281,7 +1278,7 @@ a {
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(255, 255, 255, 0.07),
+    rgba(255, 255, 255, 0.85),
     transparent
   );
   animation: shimmer 1.4s infinite;
@@ -1332,7 +1329,7 @@ a {
 .spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid rgba(255, 255, 255, 0.1);
+  border: 3px solid rgba(15, 23, 42, 0.12);
   border-top-color: var(--accent);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -1818,7 +1815,7 @@ input[type='range'] {
 /* Demo-mode hint banner */
 .banner.demo-hint {
   background:
-    radial-gradient(400px 120px at 0% 50%, rgba(139, 116, 255, 0.12), transparent 70%),
+    radial-gradient(400px 120px at 0% 50%, rgba(99, 102, 241, 0.12), transparent 70%),
     var(--grad-soft);
   border: 1px solid var(--border-strong);
   color: var(--text-muted);
@@ -1835,7 +1832,7 @@ input[type='range'] {
   color: var(--text);
 }
 .demo-hint-btn {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.85);
   border: 1px solid var(--border-strong);
   color: var(--text);
   padding: 8px 15px;
@@ -2017,7 +2014,7 @@ input[type='range'] {
   height: 100%;
   background: var(--grad);
   border-radius: var(--r-pill);
-  box-shadow: 0 0 10px rgba(109, 107, 255, 0.5);
+  box-shadow: 0 0 10px rgba(79, 70, 229, 0.5);
   transition: width var(--t-med) var(--ease);
 }
 .pdf-progress-label {
@@ -2318,7 +2315,7 @@ input[type='range'] {
   height: 100%;
   background: var(--grad);
   border-radius: var(--r-pill);
-  box-shadow: 0 0 12px rgba(109, 107, 255, 0.6);
+  box-shadow: 0 0 12px rgba(79, 70, 229, 0.6);
   transition: width var(--t-med) var(--ease);
 }
 
@@ -2514,7 +2511,7 @@ input[type='range'] {
 }
 .an-seg-new,
 .an-dot.an-seg-new {
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(15, 23, 42, 0.22);
 }
 
 /* Headline tiles */
@@ -2600,20 +2597,20 @@ input[type='range'] {
   background: var(--bg-elev-2);
 }
 .an-cell-0 {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(15, 23, 42, 0.06);
 }
 .an-cell-1 {
-  background: rgba(139, 116, 255, 0.35);
+  background: rgba(79, 70, 229, 0.25);
 }
 .an-cell-2 {
-  background: rgba(124, 116, 255, 0.6);
+  background: rgba(79, 70, 229, 0.45);
 }
 .an-cell-3 {
-  background: rgba(109, 107, 255, 0.85);
+  background: rgba(79, 70, 229, 0.7);
 }
 .an-cell-4 {
   background: var(--accent);
-  box-shadow: 0 0 8px rgba(109, 107, 255, 0.6);
+  box-shadow: 0 0 8px rgba(79, 70, 229, 0.35);
 }
 .an-heat-legend {
   display: flex;
@@ -2814,5 +2811,41 @@ input[type='range'] {
   }
   .an-summary {
     grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ============================================================
+   Scroll reveal — 4 directions (driven by useScrollReveal)
+   Hidden state only applies once JS adds `reveal-ready` to <html>,
+   so the page is fully visible without JS / under reduced motion.
+   ============================================================ */
+html.reveal-ready [data-reveal] {
+  opacity: 0;
+  transition: opacity 0.7s var(--ease), transform 0.7s var(--ease);
+  will-change: opacity, transform;
+}
+html.reveal-ready [data-reveal='up'] {
+  transform: translateY(42px);
+}
+html.reveal-ready [data-reveal='down'] {
+  transform: translateY(-42px);
+}
+html.reveal-ready [data-reveal='left'] {
+  transform: translateX(-46px);
+}
+html.reveal-ready [data-reveal='right'] {
+  transform: translateX(46px);
+}
+html.reveal-ready [data-reveal].in-view {
+  opacity: 1;
+  transform: none;
+  will-change: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.reveal-ready [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
   }
 }
