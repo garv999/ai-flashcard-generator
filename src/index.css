@@ -91,6 +91,15 @@ body,
   margin: 0;
 }
 
+/* Clip horizontal overflow from off-screen scroll-reveal elements (offset via
+   translateX until revealed) on the React root. `overflow-x: clip` keeps
+   overflow-y visible and creates no scroll container, so position:sticky and
+   the smooth-scroll document flow both keep working. */
+#root {
+  overflow-x: clip;
+  overflow-y: visible;
+}
+
 body {
   background: var(--bg);
   color: var(--text);

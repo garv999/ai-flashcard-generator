@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import Header from './components/Header.jsx'
 import Ambient from './components/Ambient.jsx'
+import CinematicHero from './components/CinematicHero.jsx'
 import HeroStats from './components/HeroStats.jsx'
 import TopicForm from './components/TopicForm.jsx'
 import PdfUpload from './components/PdfUpload.jsx'
@@ -16,6 +17,7 @@ import { recordReview, loadLocalStats, saveLocalStats } from './services/analyti
 import { useAuth } from './hooks/useAuth.js'
 import useScrollReveal from './hooks/useScrollReveal.js'
 import useBackgroundParallax from './hooks/useBackgroundParallax.js'
+import useSmoothScroll from './hooks/useSmoothScroll.js'
 import {
   subscribeToDecks,
   saveDeck,
@@ -50,6 +52,7 @@ export default function App() {
   const { user, authReady, logout } = useAuth()
   useScrollReveal()
   useBackgroundParallax()
+  const { scrollTo } = useSmoothScroll()
 
   const [sets, setSets] = useState([])
   const [settings, setSettings] = useState(loadSettings)
@@ -265,7 +268,9 @@ export default function App() {
   }
 
   return (
-    <div className="app">
+    <>
+      <CinematicHero onGetStarted={() => scrollTo('#workspace')} />
+      <div className="app" id="workspace">
       <Ambient />
       <Header
         provider={settings.provider}
@@ -359,6 +364,7 @@ export default function App() {
           ? `Signed in as ${user.displayName || user.email} · Decks synced to the cloud`
           : 'Demo mode · Flashcards saved locally in your browser'}
       </footer>
-    </div>
+      </div>
+    </>
   )
 }
