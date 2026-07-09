@@ -41,7 +41,7 @@ function drawScreen(x, w, h, screen) {
 
   // Header
   const dg = x.createLinearGradient(40, 0, 60, 20)
-  dg.addColorStop(0, '#8b7cff')
+  dg.addColorStop(0, '#8aa0ff')
   dg.addColorStop(1, '#38bdf8')
   x.fillStyle = dg
   x.beginPath()
@@ -66,7 +66,7 @@ function drawScreen(x, w, h, screen) {
     // Progress bar
     const tiles = [
       ['7', 'Day streak', '#f0a34a'],
-      ['128', 'Reviews', '#8b7cff'],
+      ['128', 'Reviews', '#8aa0ff'],
       ['86%', 'Retention', '#34d399'],
       ['24', 'Mastered', '#38bdf8'],
     ]
@@ -103,7 +103,7 @@ function drawScreen(x, w, h, screen) {
   x.fill()
   const frac = screen === 'answer' ? 0.2 : 0.1
   const pg = x.createLinearGradient(cx, 0, cx + cw * frac, 0)
-  pg.addColorStop(0, '#8b7cff')
+  pg.addColorStop(0, '#8aa0ff')
   pg.addColorStop(1, '#38bdf8')
   x.fillStyle = pg
   rr(cx, 152, cw * frac, 8, 4)
@@ -153,7 +153,7 @@ function drawScreen(x, w, h, screen) {
   const btns = [
     ['Again', '#ff6b8a'],
     ['Hard', '#f0a34a'],
-    ['Good', '#7c6cff'],
+    ['Good', '#6f8bff'],
     ['Easy', '#34d399'],
   ]
   const by = cy + ch + 26
