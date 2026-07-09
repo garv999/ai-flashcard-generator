@@ -4,44 +4,44 @@
    AI SaaS products (Linear / Vercel / Raycast).
    ============================================================ */
 :root {
-  color-scheme: light;
+  color-scheme: dark;
 
-  /* Surfaces — page background up to raised panels */
-  --bg: #f6f7fb;
-  --bg-elev-1: #eef1f7;
-  --bg-elev-2: #e5e9f2;
-  --panel: #ffffff;
-  --panel-hover: #f6f8fc;
-  --inset: #f2f4f9;
+  /* Surfaces — deep navy that flows seamlessly out of the cinematic hero */
+  --bg: #0a0c1c;
+  --bg-elev-1: #12152b;
+  --bg-elev-2: #1a1e3a;
+  --panel: #12152a;
+  --panel-hover: #181c36;
+  --inset: #0c0e20;
 
   /* Frosted-glass surfaces */
-  --glass: rgba(255, 255, 255, 0.72);
-  --glass-strong: rgba(255, 255, 255, 0.9);
-  --glass-blur: blur(16px) saturate(1.08);
+  --glass: rgba(20, 24, 48, 0.6);
+  --glass-strong: rgba(16, 19, 40, 0.82);
+  --glass-blur: blur(18px) saturate(1.3);
 
-  /* Hairline borders — dark translucent, read correctly on light surfaces */
-  --border: rgba(15, 23, 42, 0.09);
-  --border-strong: rgba(15, 23, 42, 0.16);
-  --edge-light: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  /* Hairline borders — translucent white, read over any dark surface */
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --edge-light: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 
   /* Text */
-  --text: #0f172a;
-  --text-muted: #4b5568;
-  --text-faint: #94a3b8;
+  --text: #eceefb;
+  --text-muted: #a3a9cc;
+  --text-faint: #6b7196;
 
-  /* Brand / accents */
-  --accent: #4f46e5;
-  --accent-2: #2563eb;
-  --accent-soft: rgba(79, 70, 229, 0.1);
-  --accent-ring: rgba(79, 70, 229, 0.4);
-  --danger: #dc2626;
-  --danger-soft: rgba(220, 38, 38, 0.08);
-  --ok: #16a34a;
-  --dot-idle: rgba(15, 23, 42, 0.16);
+  /* Brand / accents — bright on dark, matching the hero gradient */
+  --accent: #7c6cff;
+  --accent-2: #38bdf8;
+  --accent-soft: rgba(124, 108, 255, 0.16);
+  --accent-ring: rgba(124, 108, 255, 0.5);
+  --danger: #ff6b8a;
+  --danger-soft: rgba(255, 107, 138, 0.12);
+  --ok: #34d399;
+  --dot-idle: rgba(255, 255, 255, 0.16);
 
-  --grad: linear-gradient(135deg, #6366f1 0%, #4f46e5 45%, #2563eb 100%);
-  --grad-text: linear-gradient(120deg, #1e293b 0%, #4f46e5 60%, #2563eb 100%);
-  --grad-soft: linear-gradient(135deg, rgba(79, 70, 229, 0.12), rgba(37, 99, 235, 0.06));
+  --grad: linear-gradient(135deg, #8b7cff 0%, #6d6bff 45%, #38bdf8 100%);
+  --grad-text: linear-gradient(120deg, #ffffff 0%, #cdd3ff 55%, #9fe8ff 100%);
+  --grad-soft: linear-gradient(135deg, rgba(124, 108, 255, 0.18), rgba(56, 189, 248, 0.1));
 
   /* Radii */
   --r-sm: 9px;
@@ -60,12 +60,12 @@
   --s-8: 32px;
   --s-10: 40px;
 
-  /* Elevation — soft, neutral shadows for a clean light UI */
-  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
-  --shadow-md: 0 1px 3px rgba(15, 23, 42, 0.06), 0 10px 24px rgba(15, 23, 42, 0.08);
-  --shadow-lg: 0 12px 24px rgba(15, 23, 42, 0.1), 0 32px 64px rgba(15, 23, 42, 0.14);
-  --shadow-accent: 0 8px 20px rgba(79, 70, 229, 0.28);
-  --glow: 0 8px 30px rgba(79, 70, 229, 0.18);
+  /* Elevation — deep shadows with a soft accent glow */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.36), 0 16px 40px rgba(0, 0, 0, 0.46);
+  --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.4), 0 40px 80px rgba(0, 0, 0, 0.6);
+  --shadow-accent: 0 10px 30px rgba(109, 107, 255, 0.42);
+  --glow: 0 10px 40px rgba(124, 108, 255, 0.3);
 
   /* Motion */
   --ease: cubic-bezier(0.4, 0.2, 0.2, 1);
@@ -121,21 +121,22 @@ body {
   overflow: hidden;
   pointer-events: none;
   background:
-    radial-gradient(1000px 640px at 88% -8%, rgba(99, 102, 241, 0.12), transparent 62%),
-    radial-gradient(820px 560px at 2% 6%, rgba(37, 99, 235, 0.07), transparent 58%),
-    linear-gradient(180deg, #fbfcfe 0%, var(--bg) 55%);
+    radial-gradient(1100px 680px at 85% -10%, rgba(124, 108, 255, 0.16), transparent 60%),
+    radial-gradient(900px 620px at 4% 8%, rgba(56, 189, 248, 0.1), transparent 58%),
+    radial-gradient(1200px 800px at 50% 120%, rgba(109, 107, 255, 0.08), transparent 60%),
+    var(--bg);
 }
 
-/* Soft drifting tint — very subtle on a light surface.
-   Parallaxes upward as the page scrolls (--sy from useBackgroundParallax). */
+/* Drifting aurora light. Parallaxes upward as the page scrolls (--sy). */
 .scene-aurora {
   position: absolute;
   inset: -25%;
   background:
-    radial-gradient(closest-side, rgba(99, 102, 241, 0.14), transparent) 20% 12% / 46% 46% no-repeat,
-    radial-gradient(closest-side, rgba(37, 99, 235, 0.1), transparent) 82% 6% / 42% 42% no-repeat;
+    radial-gradient(closest-side, rgba(124, 108, 255, 0.4), transparent) 20% 12% / 46% 46% no-repeat,
+    radial-gradient(closest-side, rgba(56, 189, 248, 0.28), transparent) 82% 6% / 42% 42% no-repeat,
+    radial-gradient(closest-side, rgba(109, 107, 255, 0.26), transparent) 55% 34% / 48% 48% no-repeat;
   filter: blur(80px);
-  opacity: 0.9;
+  opacity: 0.7;
   translate: 0 calc(var(--sy, 0px) * -0.14);
   will-change: translate;
   animation: aurora-drift 26s var(--ease) infinite alternate;
@@ -159,13 +160,13 @@ body {
   position: absolute;
   inset: -10% 0;
   background-image:
-    linear-gradient(rgba(15, 23, 42, 0.028) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(15, 23, 42, 0.028) 1px, transparent 1px);
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
   background-size: 46px 46px;
   -webkit-mask-image: radial-gradient(circle at 50% 22%, #000 0%, transparent 72%);
   mask-image: radial-gradient(circle at 50% 22%, #000 0%, transparent 72%);
   translate: 0 calc(var(--sy, 0px) * 0.08);
-  opacity: calc(0.55 + var(--sp, 0) * 0.45);
+  opacity: calc(0.5 + var(--sp, 0) * 0.4);
   will-change: translate, opacity;
 }
 
@@ -178,10 +179,10 @@ body {
   height: 920px;
   margin-left: -460px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(79, 70, 229, 0.14), transparent 60%);
+  background: radial-gradient(circle, rgba(124, 108, 255, 0.22), transparent 60%);
   filter: blur(40px);
   translate: 0 calc(var(--sy, 0px) * -0.28);
-  opacity: calc(0.15 + var(--sp, 0) * 0.85);
+  opacity: calc(0.25 + var(--sp, 0) * 0.75);
   will-change: translate, opacity;
 }
 
@@ -189,7 +190,9 @@ body {
 .scene-vignette {
   position: absolute;
   inset: 0;
-  background: radial-gradient(120% 100% at 50% 120%, transparent 62%, rgba(15, 23, 42, 0.04) 100%);
+  background:
+    radial-gradient(120% 90% at 50% 0%, transparent 45%, rgba(3, 5, 16, 0.5) 100%),
+    radial-gradient(120% 100% at 50% 120%, transparent 55%, rgba(3, 5, 16, 0.55) 100%);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -221,20 +224,20 @@ a {
 /* Custom scrollbars */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(15, 23, 42, 0.2) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
 }
 *::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
 *::-webkit-scrollbar-thumb {
-  background: rgba(15, 23, 42, 0.2);
+  background: rgba(255, 255, 255, 0.18);
   border-radius: var(--r-pill);
   border: 3px solid transparent;
   background-clip: content-box;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background: rgba(15, 23, 42, 0.32);
+  background: rgba(255, 255, 255, 0.3);
   background-clip: content-box;
 }
 
@@ -861,18 +864,18 @@ a {
 
 .banner.error {
   background: var(--danger-soft);
-  border: 1px solid rgba(220, 38, 38, 0.3);
-  color: #b91c1c;
+  border: 1px solid rgba(255, 107, 138, 0.4);
+  color: #ffb0c1;
 }
 
 .banner.warn {
   align-items: center;
-  background: rgba(217, 119, 6, 0.08);
-  border: 1px solid rgba(217, 119, 6, 0.3);
-  color: #92400e;
+  background: rgba(240, 163, 74, 0.12);
+  border: 1px solid rgba(240, 163, 74, 0.4);
+  color: #f3c18a;
 }
 .banner.warn svg {
-  color: #d97706;
+  color: #f0a34a;
 }
 .banner-dismiss {
   margin-left: auto;
@@ -890,7 +893,7 @@ a {
 }
 .banner-dismiss:hover {
   opacity: 1;
-  background: rgba(15, 23, 42, 0.06);
+  background: rgba(255, 255, 255, 0.08);
 }
 .banner-dismiss svg {
   width: 15px;
@@ -1117,13 +1120,13 @@ a {
 }
 
 .flashcard-front {
-  background: linear-gradient(165deg, #ffffff 0%, #fafbff 55%, #f4f6fc 100%);
+  background: linear-gradient(165deg, #1a1e3c 0%, var(--panel) 55%, #0c0e22 100%);
 }
 
 .flashcard-back {
   background:
-    radial-gradient(600px 300px at 50% 0%, rgba(79, 70, 229, 0.1), transparent 60%),
-    linear-gradient(165deg, #ffffff 0%, #f6f5ff 60%, #eef1fb 100%);
+    radial-gradient(600px 300px at 50% 0%, rgba(124, 108, 255, 0.2), transparent 60%),
+    linear-gradient(165deg, #1e1c40 0%, var(--panel) 60%, #0c0e22 100%);
   border-color: var(--border-strong);
   transform: rotateY(180deg);
 }
@@ -1133,7 +1136,7 @@ a {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: radial-gradient(120% 80% at 50% -10%, rgba(15, 23, 42, 0.015), transparent 55%);
+  background: radial-gradient(120% 80% at 50% -10%, rgba(255, 255, 255, 0.06), transparent 55%);
   pointer-events: none;
 }
 
@@ -1287,7 +1290,7 @@ a {
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(255, 255, 255, 0.85),
+    rgba(255, 255, 255, 0.08),
     transparent
   );
   animation: shimmer 1.4s infinite;
@@ -1338,7 +1341,7 @@ a {
 .spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid rgba(15, 23, 42, 0.12);
+  border: 3px solid rgba(255, 255, 255, 0.12);
   border-top-color: var(--accent);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -1841,7 +1844,7 @@ input[type='range'] {
   color: var(--text);
 }
 .demo-hint-btn {
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--border-strong);
   color: var(--text);
   padding: 8px 15px;
@@ -2520,7 +2523,7 @@ input[type='range'] {
 }
 .an-seg-new,
 .an-dot.an-seg-new {
-  background: rgba(15, 23, 42, 0.22);
+  background: rgba(255, 255, 255, 0.2);
 }
 
 /* Headline tiles */
@@ -2606,7 +2609,7 @@ input[type='range'] {
   background: var(--bg-elev-2);
 }
 .an-cell-0 {
-  background: rgba(15, 23, 42, 0.06);
+  background: rgba(255, 255, 255, 0.06);
 }
 .an-cell-1 {
   background: rgba(79, 70, 229, 0.25);

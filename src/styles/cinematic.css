@@ -34,18 +34,33 @@
     linear-gradient(180deg, rgba(6, 8, 24, 0.5) 0%, rgba(6, 8, 24, 0.1) 38%, rgba(6, 8, 24, 0.62) 100%);
 }
 
-/* Overlay content */
+/* Overlay content — two columns (text + rotating phone) on desktop */
 .cine-overlay {
   position: absolute;
   inset: 0;
   z-index: 2;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
   align-items: center;
-  justify-content: center;
-  text-align: center;
+  gap: clamp(24px, 5vw, 72px);
+  width: min(1180px, 100%);
+  margin: 0 auto;
   padding: clamp(24px, 6vw, 80px);
   color: #fff;
+}
+
+.cine-text {
+  text-align: left;
+  min-width: 0;
+}
+
+/* Right column holds the phone in a 3D perspective space */
+.cine-visual {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  perspective: 1400px;
+  min-width: 0;
 }
 
 /* Idempotent entrance stagger for overlay content */
@@ -64,6 +79,10 @@
 }
 .cine-cta[data-hero-in] {
   animation-delay: 0.54s;
+}
+.cine-visual[data-hero-in] {
+  animation-delay: 0.35s;
+  animation-duration: 1.1s;
 }
 @keyframes hero-rise {
   from {
@@ -87,9 +106,9 @@
 
 .cine-title {
   margin: 0;
-  font-size: clamp(40px, 8vw, 94px);
+  font-size: clamp(36px, 5.4vw, 76px);
   font-weight: 700;
-  line-height: 1.02;
+  line-height: 1.03;
   letter-spacing: -0.03em;
   text-shadow: 0 2px 40px rgba(0, 0, 0, 0.45);
 }
@@ -102,9 +121,9 @@
 }
 
 .cine-sub {
-  margin: clamp(18px, 2.6vw, 28px) 0 0;
-  max-width: 620px;
-  font-size: clamp(15px, 2vw, 20px);
+  margin: clamp(16px, 2.4vw, 26px) 0 0;
+  max-width: 480px;
+  font-size: clamp(15px, 1.5vw, 18px);
   line-height: 1.6;
   color: rgba(255, 255, 255, 0.82);
   text-shadow: 0 1px 20px rgba(0, 0, 0, 0.4);
@@ -180,24 +199,219 @@
   }
 }
 
+/* ============================================================
+   iPhone 16 Pro mockup (CSS/SVG) — rotates in 3D on scroll
+   ============================================================ */
+.phone {
+  position: relative;
+  width: clamp(232px, 25vw, 306px);
+  aspect-ratio: 9 / 19.3;
+  transform-style: preserve-3d;
+  will-change: transform;
+  /* Initial pose (matches the GSAP fromTo start; used as-is under reduced motion) */
+  transform: rotateY(-34deg) rotateX(12deg) rotateZ(-9deg);
+}
+
+.phone-frame {
+  position: absolute;
+  inset: 0;
+  border-radius: 46px;
+  padding: 9px;
+  background: linear-gradient(145deg, #45454b 0%, #202024 26%, #0b0b0d 58%, #303036 100%);
+  box-shadow: 0 50px 90px -24px rgba(0, 0, 0, 0.75), 0 16px 40px rgba(0, 0, 0, 0.55),
+    inset 0 0 0 1.5px rgba(255, 255, 255, 0.14), inset 0 2px 4px rgba(255, 255, 255, 0.18);
+  animation: phone-float 7s ease-in-out infinite;
+}
+@keyframes phone-float {
+  0%,
+  100% {
+    transform: translateY(-6px);
+  }
+  50% {
+    transform: translateY(6px);
+  }
+}
+
+.phone-island {
+  position: absolute;
+  top: 17px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 33%;
+  height: 21px;
+  border-radius: 999px;
+  background: #000;
+  z-index: 3;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.phone-glare {
+  position: absolute;
+  inset: 0;
+  border-radius: 46px;
+  pointer-events: none;
+  z-index: 4;
+  background: linear-gradient(
+    120deg,
+    rgba(255, 255, 255, 0.16) 0%,
+    transparent 24%,
+    transparent 76%,
+    rgba(255, 255, 255, 0.07) 100%
+  );
+}
+
+.phone-screen {
+  position: relative;
+  height: 100%;
+  border-radius: 38px;
+  overflow: hidden;
+  background: radial-gradient(120% 80% at 50% 0%, #191d3a, #0a0c1e 72%);
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 46px 13px 14px;
+}
+
+.ps-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+}
+.ps-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: #fff;
+}
+.ps-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #8b7cff, #38bdf8);
+}
+.ps-count {
+  font-variant-numeric: tabular-nums;
+}
+.ps-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+.ps-progress span {
+  display: block;
+  width: 12%;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #8b7cff, #38bdf8);
+}
+.ps-card {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: linear-gradient(165deg, #232750, #13152c);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+.ps-tag {
+  position: absolute;
+  top: 12px;
+  left: 14px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.4);
+}
+.ps-q {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #fff;
+}
+.ps-hint {
+  position: absolute;
+  bottom: 12px;
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.38);
+}
+.ps-actions {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
+}
+.ps-btn {
+  padding: 7px 0;
+  border-radius: 9px;
+  font-size: 9px;
+  font-weight: 700;
+  text-align: center;
+  color: #fff;
+}
+.ps-again {
+  background: rgba(255, 107, 138, 0.92);
+}
+.ps-hard {
+  background: rgba(240, 163, 74, 0.92);
+}
+.ps-good {
+  background: rgba(124, 108, 255, 0.95);
+}
+.ps-easy {
+  background: rgba(52, 211, 153, 0.92);
+}
+
 /* ---- Responsive ---- */
 @media (max-width: 900px) {
   .cine {
-    height: 240vh;
+    height: 260vh;
+  }
+  .cine-overlay {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: clamp(20px, 5vw, 40px);
+  }
+  .cine-text {
+    text-align: center;
+    order: 1;
+  }
+  .cine-visual {
+    order: 2;
+  }
+  .cine-sub {
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .phone {
+    width: clamp(180px, 34vw, 240px);
   }
 }
 @media (max-width: 560px) {
   .cine {
-    height: 220vh;
-  }
-  .cine-overlay {
-    align-items: center;
+    height: 240vh;
   }
   .cine-cta {
     width: 100%;
     max-width: 320px;
     justify-content: center;
     padding: 15px 24px;
+  }
+  .phone {
+    width: 168px;
+  }
+  .phone-frame {
+    animation: none;
   }
 }
 
@@ -215,6 +429,9 @@
   }
   .cine-overlay [data-hero-in] {
     opacity: 1;
+    animation: none;
+  }
+  .phone-frame {
     animation: none;
   }
 }

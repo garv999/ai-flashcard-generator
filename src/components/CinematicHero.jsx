@@ -44,6 +44,7 @@ export default function CinematicHero({ onGetStarted }) {
   const wrapRef = useRef(null)
   const canvasRef = useRef(null)
   const overlayRef = useRef(null)
+  const phoneRef = useRef(null)
 
   useEffect(() => {
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -178,15 +179,35 @@ export default function CinematicHero({ onGetStarted }) {
         // Hand the overlay off as the flight ends (fully legible until then).
         gsap.to(overlayRef.current, {
           opacity: 0,
-          y: -50,
+          y: -60,
           ease: 'none',
           scrollTrigger: {
             trigger: wrapRef.current,
-            start: '62% top',
+            start: '64% top',
             end: 'bottom bottom',
             scrub: true,
           },
         })
+
+        // The iPhone rotates in 3D as you scroll through the hero.
+        if (phoneRef.current) {
+          gsap.fromTo(
+            phoneRef.current,
+            { rotateY: -34, rotateX: 12, rotateZ: -9 },
+            {
+              rotateY: 28,
+              rotateX: -8,
+              rotateZ: 9,
+              ease: 'none',
+              scrollTrigger: {
+                trigger: wrapRef.current,
+                start: 'top top',
+                end: 'bottom bottom',
+                scrub: 1,
+              },
+            },
+          )
+        }
       }, wrapRef)
     }
 
@@ -221,22 +242,55 @@ export default function CinematicHero({ onGetStarted }) {
         <div className="cine-scrim" aria-hidden="true" />
 
         <div className="cine-overlay" ref={overlayRef}>
-          <p className="cine-eyebrow" data-hero-in>
-            AI-Powered Study Workspace
-          </p>
-          <h1 className="cine-title" data-hero-in>
-            Learn anything,
-            <br />
-            <em>remember</em> everything.
-          </h1>
-          <p className="cine-sub" data-hero-in>
-            Turn any topic or PDF into a smart flashcard deck with spaced repetition built in —
-            so knowledge actually sticks.
-          </p>
-          <button type="button" className="cine-cta" onClick={onGetStarted} data-hero-in>
-            <SparklesIcon />
-            Start studying
-          </button>
+          <div className="cine-text">
+            <p className="cine-eyebrow" data-hero-in>
+              AI-Powered Study Workspace
+            </p>
+            <h1 className="cine-title" data-hero-in>
+              Learn anything,
+              <br />
+              <em>remember</em> everything.
+            </h1>
+            <p className="cine-sub" data-hero-in>
+              Turn any topic or PDF into a smart flashcard deck with spaced repetition built
+              in — so knowledge actually sticks.
+            </p>
+            <button type="button" className="cine-cta" onClick={onGetStarted} data-hero-in>
+              <SparklesIcon />
+              Start studying
+            </button>
+          </div>
+
+          <div className="cine-visual" data-hero-in aria-hidden="true">
+            <div ref={phoneRef} className="phone">
+              <div className="phone-frame">
+                <div className="phone-island" />
+                <div className="phone-screen">
+                  <div className="ps-top">
+                    <span className="ps-brand">
+                      <span className="ps-dot" /> AI Flashcards
+                    </span>
+                    <span className="ps-count">1 / 10</span>
+                  </div>
+                  <div className="ps-progress">
+                    <span />
+                  </div>
+                  <div className="ps-card">
+                    <span className="ps-tag">Question</span>
+                    <p className="ps-q">What is spaced repetition?</p>
+                    <span className="ps-hint">Tap to reveal answer</span>
+                  </div>
+                  <div className="ps-actions">
+                    <span className="ps-btn ps-again">Again</span>
+                    <span className="ps-btn ps-hard">Hard</span>
+                    <span className="ps-btn ps-good">Good</span>
+                    <span className="ps-btn ps-easy">Easy</span>
+                  </div>
+                </div>
+                <div className="phone-glare" />
+              </div>
+            </div>
+          </div>
         </div>
 
         <button
