@@ -6,13 +6,13 @@
 :root {
   color-scheme: dark;
 
-  /* Surfaces — deep navy that flows seamlessly out of the cinematic hero */
-  --bg: #0a0c1c;
-  --bg-elev-1: #12152b;
-  --bg-elev-2: #1a1e3a;
-  --panel: #12152a;
-  --panel-hover: #181c36;
-  --inset: #0c0e20;
+  /* Surfaces — classic graphite/charcoal that flows out of the hero */
+  --bg: #0d0d12;
+  --bg-elev-1: #16161e;
+  --bg-elev-2: #1e1e28;
+  --panel: #16161f;
+  --panel-hover: #1d1d28;
+  --inset: #101015;
 
   /* Frosted-glass surfaces */
   --glass: rgba(20, 24, 48, 0.6);
@@ -121,22 +121,22 @@ body {
   overflow: hidden;
   pointer-events: none;
   background:
-    radial-gradient(1100px 680px at 85% -10%, rgba(124, 108, 255, 0.16), transparent 60%),
-    radial-gradient(900px 620px at 4% 8%, rgba(56, 189, 248, 0.1), transparent 58%),
-    radial-gradient(1200px 800px at 50% 120%, rgba(109, 107, 255, 0.08), transparent 60%),
+    radial-gradient(1100px 680px at 85% -10%, rgba(196, 200, 208, 0.06), transparent 60%),
+    radial-gradient(900px 620px at 4% 8%, rgba(160, 164, 172, 0.045), transparent 58%),
+    radial-gradient(1200px 800px at 50% 120%, rgba(150, 154, 162, 0.04), transparent 60%),
     var(--bg);
 }
 
-/* Drifting aurora light. Parallaxes upward as the page scrolls (--sy). */
+/* Drifting soft grey light. Parallaxes upward as the page scrolls (--sy). */
 .scene-aurora {
   position: absolute;
   inset: -25%;
   background:
-    radial-gradient(closest-side, rgba(124, 108, 255, 0.4), transparent) 20% 12% / 46% 46% no-repeat,
-    radial-gradient(closest-side, rgba(56, 189, 248, 0.28), transparent) 82% 6% / 42% 42% no-repeat,
-    radial-gradient(closest-side, rgba(109, 107, 255, 0.26), transparent) 55% 34% / 48% 48% no-repeat;
+    radial-gradient(closest-side, rgba(196, 200, 208, 0.16), transparent) 20% 12% / 46% 46% no-repeat,
+    radial-gradient(closest-side, rgba(160, 164, 172, 0.12), transparent) 82% 6% / 42% 42% no-repeat,
+    radial-gradient(closest-side, rgba(150, 154, 162, 0.1), transparent) 55% 34% / 48% 48% no-repeat;
   filter: blur(80px);
-  opacity: 0.7;
+  opacity: 0.6;
   translate: 0 calc(var(--sy, 0px) * -0.14);
   will-change: translate;
   animation: aurora-drift 26s var(--ease) infinite alternate;
@@ -179,10 +179,10 @@ body {
   height: 920px;
   margin-left: -460px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(124, 108, 255, 0.22), transparent 60%);
+  background: radial-gradient(circle, rgba(196, 200, 208, 0.12), transparent 60%);
   filter: blur(40px);
   translate: 0 calc(var(--sy, 0px) * -0.28);
-  opacity: calc(0.25 + var(--sp, 0) * 0.75);
+  opacity: calc(0.2 + var(--sp, 0) * 0.6);
   will-change: translate, opacity;
 }
 

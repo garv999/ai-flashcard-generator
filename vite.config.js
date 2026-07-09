@@ -20,6 +20,7 @@ export default defineConfig({
           'firebase-firestore': ['firebase/firestore'],
           pdfjs: ['pdfjs-dist'],
           react: ['react', 'react-dom'],
+          three: ['three', '@react-three/fiber', '@react-three/drei'],
         },
       },
     },
