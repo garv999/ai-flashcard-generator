@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
 import Flashcard from './Flashcard.jsx'
 import ReviewSession from './ReviewSession.jsx'
+import QuizSession from './QuizSession.jsx'
 import { ChevronLeftIcon, ChevronRightIcon, CardsIcon } from './Icons.jsx'
 import { deckDueCount } from '../services/srs.js'
 
-export default function StudyView({ set, onRate }) {
+export default function StudyView({ set, onRate, onSaveQuizResult }) {
   const [index, setIndex] = useState(0)
-  const [mode, setMode] = useState('browse') // 'browse' | 'review'
+  const [mode, setMode] = useState('browse') // 'browse' | 'review' | 'quiz'
 
   // Reset to the first card and back to browsing when switching sets.
   useEffect(() => {
@@ -81,11 +82,27 @@ export default function StudyView({ set, onRate }) {
             Review
             {due > 0 && <span className="due-pill">{due}</span>}
           </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mode === 'quiz'}
+            className={`study-mode ${mode === 'quiz' ? 'active' : ''}`}
+            onClick={() => setMode('quiz')}
+          >
+            Quiz
+          </button>
         </div>
       </div>
 
       {mode === 'review' ? (
         <ReviewSession set={set} onRate={onRate} onExit={() => setMode('browse')} />
+      ) : mode === 'quiz' ? (
+        <QuizSession
+          key={set.id}
+          set={set}
+          onSaveResult={onSaveQuizResult}
+          onExit={() => setMode('browse')}
+        />
       ) : (
         <>
           <div className="browse-meta">

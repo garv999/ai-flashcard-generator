@@ -51,6 +51,7 @@ export function saveDeck(uid, deck) {
   if (typeof deck.pageCount === 'number') data.pageCount = deck.pageCount
   if (deck.uploadDate) data.uploadDate = deck.uploadDate
   if (deck.pageRange) data.pageRange = deck.pageRange
+  if (deck.quiz) data.quiz = deck.quiz // best score + last quiz attempt
 
   return setDoc(doc(db, 'users', uid, 'decks', deck.id), data)
 }

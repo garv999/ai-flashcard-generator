@@ -171,6 +171,14 @@ export function GoogleIcon(props) {
   )
 }
 
+export function CheckIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M20 6 9 17l-5-5" />
+    </svg>
+  )
+}
+
 export function ChartIcon(props) {
   return (
     <svg {...base} {...props}>

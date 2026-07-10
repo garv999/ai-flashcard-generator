@@ -143,6 +143,9 @@ export default function AnalyticsModal({ sets, stats, onClose }) {
         aria-modal="true"
         aria-labelledby="analytics-title"
         onClick={(e) => e.stopPropagation()}
+        // Opt this scroll container out of Lenis so the mouse wheel, trackpad and
+        // touch scroll it natively instead of being hijacked to the page behind.
+        data-lenis-prevent
       >
         <div className="modal-head">
           <h2 id="analytics-title">Study analytics</h2>

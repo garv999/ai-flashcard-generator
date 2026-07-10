@@ -13,6 +13,7 @@ import AnalyticsModal from './components/AnalyticsModal.jsx'
 import { AlertIcon, LogInIcon, CloseIcon } from './components/Icons.jsx'
 import { generateFlashcards, generateFlashcardsFromContent } from './services/aiService.js'
 import { schedule } from './services/srs.js'
+import { foldQuizResult } from './services/quiz.js'
 import { recordReview, loadLocalStats, saveLocalStats } from './services/analytics.js'
 import { useAuth } from './hooks/useAuth.js'
 import useScrollReveal from './hooks/useScrollReveal.js'
@@ -246,6 +247,25 @@ export default function App() {
     }
   }
 
+  // Persist a finished quiz attempt onto its deck (best score + last attempt).
+  // Rides the same deck-persistence path as reviews: optimistic local update,
+  // plus a Firestore write for signed-in users.
+  async function handleSaveQuizResult(deckId, attempt) {
+    const deck = sets.find((d) => d.id === deckId)
+    if (!deck) return
+    const quiz = foldQuizResult(deck.quiz, attempt)
+    const updatedDeck = { ...deck, quiz }
+    setSets((prev) => prev.map((d) => (d.id === deckId ? updatedDeck : d)))
+    if (user) {
+      try {
+        await saveDeck(user.uid, updatedDeck)
+      } catch (err) {
+        console.error('[Flashcards] Failed to save quiz result:', err)
+        setCloudWarning(true)
+      }
+    }
+  }
+
   async function handleLogout() {
     setAuthBusy(true)
     try {
@@ -336,7 +356,11 @@ export default function App() {
           ) : decksLoading ? (
             <LoadingState label="Loading your decks…" />
           ) : (
-            <StudyView set={activeSet} onRate={handleRateCard} />
+            <StudyView
+              set={activeSet}
+              onRate={handleRateCard}
+              onSaveQuizResult={handleSaveQuizResult}
+            />
           )}
         </div>
       </main>
