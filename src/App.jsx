@@ -14,6 +14,13 @@ import { AlertIcon, LogInIcon, CloseIcon } from './components/Icons.jsx'
 import { generateFlashcards, generateFlashcardsFromContent } from './services/aiService.js'
 import { schedule } from './services/srs.js'
 import { foldQuizResult } from './services/quiz.js'
+import {
+  loadLocalChats,
+  clearLocalChats,
+  migrateLocalChats,
+  deleteLocalChat,
+  deleteChat,
+} from './services/chat.js'
 import { recordReview, loadLocalStats, saveLocalStats } from './services/analytics.js'
 import { useAuth } from './hooks/useAuth.js'
 import useScrollReveal from './hooks/useScrollReveal.js'
@@ -101,6 +108,11 @@ export default function App() {
         if (local.length) {
           await migrateLocalDecks(user.uid, local)
           clearSets() // migrated data lives in Firestore now
+        }
+        const localChats = loadLocalChats()
+        if (Object.keys(localChats).length) {
+          await migrateLocalChats(user.uid, localChats)
+          clearLocalChats() // conversations now live in Firestore
         }
       } catch (err) {
         console.error('[Flashcards] Deck migration failed:', err)
@@ -211,11 +223,13 @@ export default function App() {
       try {
         await deleteDeck(user.uid, id)
         // The realtime listener recomputes `sets` and `activeId`.
+        deleteChat(user.uid, id).catch(() => {}) // best-effort chat cleanup
       } catch (err) {
         console.error('[Flashcards] Failed to delete deck:', err)
         setError('Could not delete that deck. Please try again.')
       }
     } else {
+      deleteLocalChat(id) // drop the deck's conversation too
       setSets((prev) => {
         const remaining = prev.filter((s) => s.id !== id)
         if (id === activeId) setActiveId(remaining[0]?.id ?? null)
@@ -360,6 +374,8 @@ export default function App() {
               set={activeSet}
               onRate={handleRateCard}
               onSaveQuizResult={handleSaveQuizResult}
+              user={user}
+              settings={settings}
             />
           )}
         </div>

@@ -2,17 +2,21 @@ import { useState, useEffect, useCallback } from 'react'
 import Flashcard from './Flashcard.jsx'
 import ReviewSession from './ReviewSession.jsx'
 import QuizSession from './QuizSession.jsx'
-import { ChevronLeftIcon, ChevronRightIcon, CardsIcon } from './Icons.jsx'
+import ChatAssistant from './ChatAssistant.jsx'
+import { ChevronLeftIcon, ChevronRightIcon, CardsIcon, MessageIcon } from './Icons.jsx'
 import { deckDueCount } from '../services/srs.js'
 
-export default function StudyView({ set, onRate, onSaveQuizResult }) {
+export default function StudyView({ set, onRate, onSaveQuizResult, user, settings }) {
   const [index, setIndex] = useState(0)
   const [mode, setMode] = useState('browse') // 'browse' | 'review' | 'quiz'
+  const [chatOpen, setChatOpen] = useState(false)
 
-  // Reset to the first card and back to browsing when switching sets.
+  // Reset to the first card, back to browsing, and close the assistant when
+  // switching sets.
   useEffect(() => {
     setIndex(0)
     setMode('browse')
+    setChatOpen(false)
   }, [set?.id])
 
   const total = set?.cards.length ?? 0
@@ -62,6 +66,7 @@ export default function StudyView({ set, onRate, onSaveQuizResult }) {
       <div className="study-header">
         <h2 title={set.topic}>{set.topic}</h2>
 
+        <div className="study-header-right">
         <div className="study-modes" role="tablist" aria-label="Study mode">
           <button
             type="button"
@@ -90,6 +95,18 @@ export default function StudyView({ set, onRate, onSaveQuizResult }) {
             onClick={() => setMode('quiz')}
           >
             Quiz
+          </button>
+        </div>
+
+          <button
+            type="button"
+            className="assistant-btn"
+            onClick={() => setChatOpen(true)}
+            aria-haspopup="dialog"
+            aria-expanded={chatOpen}
+          >
+            <MessageIcon />
+            <span>Assistant</span>
           </button>
         </div>
       </div>
@@ -150,6 +167,14 @@ export default function StudyView({ set, onRate, onSaveQuizResult }) {
           </div>
         </>
       )}
+
+      <ChatAssistant
+        deck={set}
+        user={user}
+        settings={settings}
+        open={chatOpen}
+        onClose={() => setChatOpen(false)}
+      />
     </section>
   )
 }

@@ -235,6 +235,198 @@ export async function generateFlashcards(topic, settings) {
   return mockGenerate(topic, count)
 }
 
+// ---------------------------------------------------------------------------
+// Study Assistant (chat)
+//
+// answerAssistant() replies to a student's question about the currently selected
+// deck / PDF. The deck's flashcards are the assistant's source of truth (the raw
+// PDF text isn't persisted). It supports follow-ups via the conversation history
+// and can explain, simplify, give examples, compare concepts and build mnemonics
+// — all driven by the prompt. Returns a plain-text answer string.
+// ---------------------------------------------------------------------------
+const MAX_HISTORY = 12 // prior turns sent for context (token safety)
+const MAX_CONTEXT_CARDS = 40 // cards included as source material
+
+function buildAssistantSystem(deck) {
+  const topic = deck?.topic || 'the selected deck'
+  const kind = deck?.source === 'pdf' ? 'uploaded PDF' : 'study deck'
+  return (
+    `You are an AI study assistant helping a student learn from their ${kind} titled "${topic}". ` +
+    `Use the provided flashcards below as your primary source of truth about what the student is studying. ` +
+    `You can answer questions, explain concepts, simplify topics for a beginner, generate concrete examples, ` +
+    `compare and contrast concepts, and create memorable mnemonics. ` +
+    `Be clear, accurate and concise — a few short paragraphs at most, in plain text (no markdown headings). ` +
+    `If a question goes beyond the deck, answer from general knowledge and briefly note that it's outside the deck.`
+  )
+}
+
+function deckContext(deck, max = MAX_CONTEXT_CARDS) {
+  const cards = (deck?.cards || []).slice(0, max)
+  if (!cards.length) return 'No flashcards are available for this deck yet.'
+  return cards.map((c, i) => `${i + 1}. Q: ${c.question}\n   A: ${c.answer}`).join('\n')
+}
+
+async function openaiChat(system, msgs, apiKey) {
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini',
+      temperature: 0.5,
+      max_tokens: 700,
+      messages: [{ role: 'system', content: system }, ...msgs],
+    }),
+  })
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '')
+    throw new Error(`OpenAI request failed (${res.status}). ${detail.slice(0, 200)}`)
+  }
+  const json = await res.json()
+  const text = json.choices?.[0]?.message?.content?.trim()
+  if (!text) throw new Error('Empty response from OpenAI.')
+  return text
+}
+
+async function anthropicChat(system, msgs, apiKey) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-5',
+      max_tokens: 800,
+      temperature: 0.5,
+      system,
+      messages: msgs,
+    }),
+  })
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '')
+    throw new Error(`Anthropic request failed (${res.status}). ${detail.slice(0, 200)}`)
+  }
+  const json = await res.json()
+  const text = Array.isArray(json.content) ? json.content.map((b) => b.text || '').join('').trim() : ''
+  if (!text) throw new Error('Empty response from Anthropic.')
+  return text
+}
+
+// ---- Demo assistant: a context-aware, offline mock (no API key) ----
+const STOP_WORDS = new Set([
+  'the', 'a', 'an', 'of', 'to', 'in', 'is', 'and', 'or', 'for', 'on', 'what', 'why', 'how',
+  'are', 'was', 'were', 'that', 'this', 'it', 'as', 'be', 'with', 'about', 'explain', 'simple',
+  'simply', 'simplify', 'example', 'compare', 'mnemonic', 'give', 'me', 'create', 'difference',
+  'between', 'vs', 'can', 'you', 'please', 'from', 'deck', 'concept', 'concepts', 'key', 'main',
+])
+
+function tokenize(s) {
+  return (s || '').toLowerCase().match(/[a-z0-9]+/g)?.filter((w) => w.length > 2 && !STOP_WORDS.has(w)) || []
+}
+
+function rankCards(question, deck, n = 3) {
+  const words = tokenize(question)
+  const cards = deck?.cards || []
+  const scored = cards
+    .map((c) => {
+      const hay = tokenize(`${c.question} ${c.answer}`)
+      const score = words.reduce((acc, w) => acc + (hay.includes(w) ? 1 : 0), 0)
+      return { c, score }
+    })
+    .sort((a, b) => b.score - a.score)
+  const hits = scored.filter((s) => s.score > 0).map((s) => s.c)
+  return (hits.length ? hits : cards).slice(0, n)
+}
+
+function keyTerm(card) {
+  return tokenize(card?.question)[0] || tokenize(card?.answer)[0] || ''
+}
+
+function firstSentence(text) {
+  return ((text || '').split(/(?<=[.!?])\s+/)[0] || text || '').trim()
+}
+
+function mockAnswer(question, deck) {
+  const topic = deck?.topic || 'this deck'
+  const cards = deck?.cards || []
+  if (!cards.length) {
+    return `I don't have any cards for “${topic}” yet, so there's nothing to draw on. Generate a few flashcards first and I can explain, simplify or quiz you on them.`
+  }
+  const q = question.toLowerCase()
+  const picks = rankCards(question, deck, 3)
+  const top = picks[0]
+
+  if (/mnemonic|memor|remember/.test(q)) {
+    const terms = [...new Set(picks.map(keyTerm).filter(Boolean))].slice(0, 4)
+    const letters = terms.map((t) => t[0].toUpperCase()).join('')
+    return (
+      `Here's a mnemonic for “${topic}”:\n\n` +
+      `${letters || 'KEY'} — ${terms.join(', ') || 'the core ideas'}.\n\n` +
+      `Link each letter to its idea: ${terms.map((t) => `${t[0].toUpperCase()} = ${t}`).join('; ')}. ` +
+      `Picture them together in one vivid scene to make it stick.`
+    )
+  }
+  if (/(compare|contrast|differ|versus|\bvs\b)/.test(q) && picks.length >= 2) {
+    return (
+      `Comparing two ideas from “${topic}”:\n\n` +
+      `• ${picks[0].question} — ${picks[0].answer}\n` +
+      `• ${picks[1].question} — ${picks[1].answer}\n\n` +
+      `The first centres on ${keyTerm(picks[0]) || 'one idea'}, while the second is about ${keyTerm(picks[1]) || 'another'}.`
+    )
+  }
+  if (/(example|instance|real.?world|use case|use-case)/.test(q)) {
+    return (
+      `Here's an example tied to “${keyTerm(top) || topic}”:\n\n` +
+      `${top.answer}\n\n` +
+      `In practice, picture a situation where ${keyTerm(top) || 'this concept'} is doing the work — that's the idea applied.`
+    )
+  }
+  if (/(simpl|eli5|beginner|plain|easy|basic)/.test(q)) {
+    return `In simple terms: ${firstSentence(top.answer)}\n\nFrom your deck — ${top.question} ${top.answer}`
+  }
+  // explain / default
+  const body = picks.slice(0, 2).map((c) => `• ${c.question} ${c.answer}`).join('\n')
+  return (
+    `Here's what your “${topic}” deck covers on that:\n\n${body}\n\n` +
+    `Want me to simplify it, give an example, or turn it into a mnemonic? Just ask.`
+  )
+}
+
+// Answer a study-assistant question about a deck / PDF.
+//   { question, deck, history: Message[], settings } -> Promise<string>
+// `history` is the prior conversation (user/assistant turns) for follow-up context.
+export async function answerAssistant({ question, deck, history = [], settings }) {
+  const q = String(question || '').trim()
+  if (!q) throw new Error('Ask a question to get started.')
+  const provider = settings?.provider || 'demo'
+
+  // Map prior turns to provider roles, bounded for token safety.
+  const prior = (history || [])
+    .filter((m) => m && (m.role === 'user' || m.role === 'assistant') && m.text)
+    .slice(-MAX_HISTORY)
+    .map((m) => ({ role: m.role, content: String(m.text) }))
+  const msgs = [...prior, { role: 'user', content: q }]
+  const system = `${buildAssistantSystem(deck)}\n\nFLASHCARDS:\n${deckContext(deck)}`
+
+  if (provider === 'openai') {
+    if (!settings.apiKey) throw new Error('Add your OpenAI API key in Settings first.')
+    return openaiChat(system, msgs, settings.apiKey)
+  }
+  if (provider === 'anthropic') {
+    if (!settings.apiKey) throw new Error('Add your Anthropic API key in Settings first.')
+    // Anthropic requires the first message to be from the user.
+    const trimmed = [...msgs]
+    while (trimmed.length && trimmed[0].role !== 'user') trimmed.shift()
+    return anthropicChat(system, trimmed, settings.apiKey)
+  }
+
+  // Demo mode — offline, deck-aware mock.
+  await delay(600)
+  return mockAnswer(q, deck)
+}
+
 // Generate flashcards from a block of source content (e.g. extracted PDF text).
 // Large content is chunked to stay under token limits, and the cards from every
 // chunk are merged (and de-duplicated) into a single list.
