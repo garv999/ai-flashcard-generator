@@ -10,18 +10,26 @@ import StudyView from './components/StudyView.jsx'
 import SettingsModal from './components/SettingsModal.jsx'
 import AuthModal from './components/AuthModal.jsx'
 import AnalyticsModal from './components/AnalyticsModal.jsx'
+import LearningIntelligenceModal from './components/LearningIntelligenceModal.jsx'
 import { AlertIcon, LogInIcon, CloseIcon } from './components/Icons.jsx'
 import { generateFlashcards, generateFlashcardsFromContent } from './services/aiService.js'
 import { schedule } from './services/srs.js'
 import { foldQuizResult } from './services/quiz.js'
 import {
   loadLocalChats,
+  loadAllChats,
   clearLocalChats,
   migrateLocalChats,
   deleteLocalChat,
   deleteChat,
 } from './services/chat.js'
 import { recordReview, loadLocalStats, saveLocalStats } from './services/analytics.js'
+import {
+  createAndSaveIndex,
+  deleteIndex,
+  migrateLocalIndexes,
+  clearLocalIndexes,
+} from './services/retrieval.js'
 import { useAuth } from './hooks/useAuth.js'
 import useScrollReveal from './hooks/useScrollReveal.js'
 import useBackgroundParallax from './hooks/useBackgroundParallax.js'
@@ -72,9 +80,12 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false)
   const [showAuth, setShowAuth] = useState(false)
   const [showAnalytics, setShowAnalytics] = useState(false)
+  const [showIntelligence, setShowIntelligence] = useState(false)
+  const [insightChats, setInsightChats] = useState({}) // conversations for AI-interaction analysis
   const [authBusy, setAuthBusy] = useState(false) // logout in-flight
   const [stats, setStats] = useState(loadLocalStats) // study analytics (device-local)
   const [cloudWarning, setCloudWarning] = useState(false) // cloud sync degraded
+  const [coachNav, setCoachNav] = useState(null) // study-coach navigation request
 
   // Settings stay device-local (they hold the provider + API key).
   useEffect(() => saveSettings(settings), [settings])
@@ -114,6 +125,8 @@ export default function App() {
           await migrateLocalChats(user.uid, localChats)
           clearLocalChats() // conversations now live in Firestore
         }
+        const migratedIndexes = await migrateLocalIndexes(user.uid)
+        if (migratedIndexes) clearLocalIndexes() // retrieval indexes now in Firestore
       } catch (err) {
         console.error('[Flashcards] Deck migration failed:', err)
       }
@@ -197,8 +210,9 @@ export default function App() {
       })
       if (!cards.length) throw new Error('No cards were generated from this PDF.')
       const title = meta.filename.replace(/\.pdf$/i, '')
-      await persistNewDeck({
-        id: makeId(),
+      const deckId = makeId()
+      const newDeck = {
+        id: deckId,
         topic: title,
         cards,
         createdAt: new Date().toISOString(),
@@ -207,7 +221,23 @@ export default function App() {
         pageCount: meta.pageCount,
         uploadDate: meta.uploadDate,
         ...(meta.pageRange ? { pageRange: meta.pageRange } : {}),
-      })
+      }
+      await persistNewDeck(newDeck)
+
+      // Build a retrieval (RAG) index from the same source text so the AI can
+      // understand the whole document — not just the generated cards. Best-effort:
+      // a failure here never blocks deck creation.
+      try {
+        setGenProgress('Indexing document for AI…')
+        const marker = await createAndSaveIndex({ deckId, text: content, settings, user })
+        if (marker) {
+          const withRag = { ...newDeck, rag: marker }
+          setSets((prev) => prev.map((d) => (d.id === deckId ? withRag : d)))
+          if (user) await saveDeck(user.uid, withRag).catch(() => {})
+        }
+      } catch (err) {
+        console.warn('[Flashcards] Could not build retrieval index:', err?.message || err)
+      }
       return true
     } catch (err) {
       setError(err.message || 'Something went wrong while generating from the PDF.')
@@ -224,12 +254,14 @@ export default function App() {
         await deleteDeck(user.uid, id)
         // The realtime listener recomputes `sets` and `activeId`.
         deleteChat(user.uid, id).catch(() => {}) // best-effort chat cleanup
+        deleteIndex({ deckId: id, user }).catch(() => {}) // best-effort index cleanup
       } catch (err) {
         console.error('[Flashcards] Failed to delete deck:', err)
         setError('Could not delete that deck. Please try again.')
       }
     } else {
       deleteLocalChat(id) // drop the deck's conversation too
+      deleteIndex({ deckId: id, user: null }).catch(() => {}) // and its retrieval index
       setSets((prev) => {
         const remaining = prev.filter((s) => s.id !== id)
         if (id === activeId) setActiveId(remaining[0]?.id ?? null)
@@ -300,6 +332,37 @@ export default function App() {
     }
   }
 
+  // Act on a study-coach recommendation: focus the target deck and ask
+  // StudyView to switch to the recommended mode (review / quiz / plan / browse).
+  // The nonce lets the same recommendation fire more than once.
+  function handleCoachAction(deckId, mode) {
+    if (!deckId) return
+    setActiveId(deckId)
+    setCoachNav((prev) => ({ deckId, mode, n: (prev?.n || 0) + 1 }))
+  }
+
+  // Open the Learning Intelligence dashboard. Conversations power the AI-
+  // interaction analysis: loaded from localStorage (Demo) or Firestore (signed
+  // in). The dashboard renders immediately; chat data fills in when it arrives.
+  function openIntelligence() {
+    setInsightChats(user ? {} : loadLocalChats())
+    setShowIntelligence(true)
+    if (user) loadAllChats(user.uid).then(setInsightChats).catch(() => {})
+  }
+
+  // Navigate from the dashboard to a deck's study mode (reuses the coach path).
+  function handleInsightNavigate(deckId, mode) {
+    handleCoachAction(deckId, mode)
+    setShowIntelligence(false)
+  }
+
+  // Act on a "recommended flashcards" suggestion: close the dashboard and
+  // generate a focused deck on that topic via the existing generation flow.
+  function handleInsightGenerate(topic) {
+    setShowIntelligence(false)
+    handleGenerate(topic)
+  }
+
   async function handleLogout() {
     setAuthBusy(true)
     try {
@@ -330,6 +393,7 @@ export default function App() {
         provider={settings.provider}
         onOpenSettings={() => setShowSettings(true)}
         onOpenAnalytics={() => setShowAnalytics(true)}
+        onOpenIntelligence={openIntelligence}
         user={user}
         onSignIn={() => setShowAuth(true)}
         onLogout={handleLogout}
@@ -392,9 +456,13 @@ export default function App() {
           ) : (
             <StudyView
               set={activeSet}
+              sets={sets}
+              stats={stats}
               onRate={handleRateCard}
               onSaveQuizResult={handleSaveQuizResult}
               onSavePlan={handleSavePlan}
+              onCoachAction={handleCoachAction}
+              coachNav={coachNav}
               user={user}
               settings={settings}
             />
@@ -417,6 +485,17 @@ export default function App() {
           sets={sets}
           stats={stats}
           onClose={() => setShowAnalytics(false)}
+        />
+      )}
+
+      {showIntelligence && (
+        <LearningIntelligenceModal
+          sets={sets}
+          stats={stats}
+          chats={insightChats}
+          onNavigate={handleInsightNavigate}
+          onGenerate={handleInsightGenerate}
+          onClose={() => setShowIntelligence(false)}
         />
       )}
 

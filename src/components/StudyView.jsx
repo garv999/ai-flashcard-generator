@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import Flashcard from './Flashcard.jsx'
 import ReviewSession from './ReviewSession.jsx'
 import QuizSession from './QuizSession.jsx'
@@ -7,10 +7,22 @@ import ChatAssistant from './ChatAssistant.jsx'
 import { ChevronLeftIcon, ChevronRightIcon, CardsIcon, MessageIcon } from './Icons.jsx'
 import { deckDueCount } from '../services/srs.js'
 
-export default function StudyView({ set, onRate, onSaveQuizResult, onSavePlan, user, settings }) {
+export default function StudyView({
+  set,
+  sets,
+  stats,
+  onRate,
+  onSaveQuizResult,
+  onSavePlan,
+  onCoachAction,
+  coachNav,
+  user,
+  settings,
+}) {
   const [index, setIndex] = useState(0)
   const [mode, setMode] = useState('browse') // 'browse' | 'review' | 'quiz' | 'plan'
   const [chatOpen, setChatOpen] = useState(false)
+  const lastNav = useRef(0)
 
   // Reset to the first card, back to browsing, and close the assistant when
   // switching sets.
@@ -19,6 +31,16 @@ export default function StudyView({ set, onRate, onSaveQuizResult, onSavePlan, u
     setMode('browse')
     setChatOpen(false)
   }, [set?.id])
+
+  // Coach navigation: when a recommendation targets THIS deck, switch to the
+  // recommended study mode. Runs after the reset effect above, so on a cross-
+  // deck jump the requested mode wins. The nonce guard applies each request once.
+  useEffect(() => {
+    if (coachNav && coachNav.n !== lastNav.current && coachNav.deckId === set?.id && coachNav.mode) {
+      lastNav.current = coachNav.n
+      setMode(coachNav.mode)
+    }
+  }, [coachNav, set?.id])
 
   const total = set?.cards.length ?? 0
 
@@ -116,7 +138,7 @@ export default function StudyView({ set, onRate, onSaveQuizResult, onSavePlan, u
             aria-expanded={chatOpen}
           >
             <MessageIcon />
-            <span>Assistant</span>
+            <span>Coach</span>
           </button>
         </div>
       </div>
@@ -187,10 +209,13 @@ export default function StudyView({ set, onRate, onSaveQuizResult, onSavePlan, u
 
       <ChatAssistant
         deck={set}
+        sets={sets}
+        stats={stats}
         user={user}
         settings={settings}
         open={chatOpen}
         onClose={() => setChatOpen(false)}
+        onCoachAction={onCoachAction}
       />
     </section>
   )

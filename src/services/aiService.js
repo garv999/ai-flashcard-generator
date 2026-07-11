@@ -11,6 +11,10 @@
 // production app you would proxy these calls through a small backend so the
 // key is never exposed — see the README "Future Improvements" section.
 
+import { retrieveForDeck } from './retrieval.js'
+import { coachContextText, coachReply, isCoachingQuestion } from './coach.js'
+import { maybeVisual } from './diagrams.js'
+
 const SYSTEM_PROMPT =
   'You are a helpful study assistant that writes concise, accurate flashcards.'
 
@@ -247,17 +251,52 @@ export async function generateFlashcards(topic, settings) {
 const MAX_HISTORY = 12 // prior turns sent for context (token safety)
 const MAX_CONTEXT_CARDS = 40 // cards included as source material
 
-function buildAssistantSystem(deck) {
+// System prompt for the assistant. When `hasDoc` is true the answer is grounded
+// primarily in retrieved passages from the FULL document (RAG), with the
+// flashcards as supplementary context; otherwise the flashcards are the primary
+// source (topic decks, or a PDF whose index isn't available).
+function buildAssistantSystem(deck, hasDoc, hasCoach) {
   const topic = deck?.topic || 'the selected deck'
   const kind = deck?.source === 'pdf' ? 'uploaded PDF' : 'study deck'
+  const sourceGuidance = hasDoc
+    ? `Answer primarily from the SOURCE EXCERPTS below — the most relevant passages retrieved from the full ${kind} for this question. ` +
+      `Treat them as your source of truth, and use the FLASHCARDS only as supplementary context. `
+    : `Use the provided FLASHCARDS below as your primary source of truth about what the student is studying. `
+  const coachRole = hasCoach
+    ? `You are also this student's personal study coach. When they ask what to study next, where they're weak, ` +
+      `how much to study today, whether they're ready for an exam or interview, or how to plan their time, use the ` +
+      `STUDENT PROGRESS SNAPSHOT to give specific, prioritized, actionable guidance grounded in their real data. `
+    : ''
   return (
     `You are an AI study assistant helping a student learn from their ${kind} titled "${topic}". ` +
-    `Use the provided flashcards below as your primary source of truth about what the student is studying. ` +
+    sourceGuidance +
+    coachRole +
     `You can answer questions, explain concepts, simplify topics for a beginner, generate concrete examples, ` +
     `compare and contrast concepts, and create memorable mnemonics. ` +
     `Be clear, accurate and concise — a few short paragraphs at most, in plain text (no markdown headings). ` +
-    `If a question goes beyond the deck, answer from general knowledge and briefly note that it's outside the deck.`
+    // Visual learning support.
+    `When a concept is clearer shown visually, include ONE structured visual: a Mermaid diagram inside a ` +
+    '```mermaid fenced code block' +
+    ` — a flowchart ("graph TD") for a process or algorithm, a tree ("graph TD") for a hierarchy or classification, ` +
+    `a "timeline" for a sequence of events — or a Markdown table for a comparison. Use valid Mermaid syntax and keep ` +
+    `labels short. Keep simple factual questions as plain text; never force a diagram where prose is clearer. ` +
+    `If a question goes beyond this material, answer from general knowledge and briefly note that it's outside the ${kind}.`
   )
+}
+
+// Build the text used to RETRIEVE document chunks. A substantive question
+// retrieves fine on its own, but a bare follow-up ("explain that", "why?",
+// "give an example") carries no topical keywords — so only for short questions
+// do we prepend the most recent user turn to anchor retrieval on the ongoing
+// subject. This keeps standalone questions from being diluted by prior topics.
+function buildRetrievalQuery(question, history) {
+  const contentTokens = (question.toLowerCase().match(/[a-z0-9]+/g) || []).filter((w) => w.length > 2)
+  if (contentTokens.length >= 5) return question
+  const lastUser = (history || [])
+    .filter((m) => m?.role === 'user' && m.text)
+    .slice(-1)
+    .map((m) => String(m.text))
+  return [...lastUser, question].join('\n')
 }
 
 function deckContext(deck, max = MAX_CONTEXT_CARDS) {
@@ -348,9 +387,62 @@ function firstSentence(text) {
   return ((text || '').split(/(?<=[.!?])\s+/)[0] || text || '').trim()
 }
 
-function mockAnswer(question, deck) {
+// Two sentences of the most relevant passage, tidied for display.
+function excerptSummary(results, max = 2) {
+  const text = results?.[0]?.chunk?.text || ''
+  const sentences = text.split(/(?<=[.!?])\s+/).slice(0, max).join(' ').trim()
+  return sentences || text.slice(0, 320).trim()
+}
+
+// Offline demo answer that draws on retrieved DOCUMENT passages (RAG) when an
+// index is available, so Demo mode genuinely "reads the PDF". `results` is the
+// output of the retrieval layer; falls back to card-based answers when empty.
+function mockAnswerFromContext(question, topic, results) {
+  const q = question.toLowerCase()
+  const primary = excerptSummary(results, 3)
+  if (/mnemonic|memor|remember/.test(q)) {
+    const words = tokenize(primary).slice(0, 4)
+    const letters = words.map((w) => w[0].toUpperCase()).join('')
+    return (
+      `Here's a mnemonic drawn from the document on “${topic}”:\n\n` +
+      `${letters || 'KEY'} — ${words.join(', ') || 'the core ideas'}.\n\n` +
+      `Anchor it to this passage: “${excerptSummary(results, 1)}”`
+    )
+  }
+  if (/(simpl|eli5|beginner|plain|easy|basic)/.test(q)) {
+    return `In simple terms, from the document:\n\n${excerptSummary(results, 1)}\n\nMore fully — ${primary}`
+  }
+  if (/(compare|contrast|differ|versus|\bvs\b)/.test(q) && results.length >= 2) {
+    return (
+      `Comparing what the document says:\n\n` +
+      `• ${excerptSummary([results[0]], 1)}\n` +
+      `• ${excerptSummary([results[1]], 1)}`
+    )
+  }
+  if (/(example|instance|real.?world|use case|use-case)/.test(q)) {
+    return `Here's a relevant passage from the document:\n\n${primary}\n\nThat's the idea in the source material — picture it applied to a concrete case.`
+  }
+  // explain / default — quote the top passage, plus a second only when it's
+  // nearly as relevant (avoids padding the answer with an off-topic excerpt when
+  // just one chunk truly matches).
+  const topScore = results[0]?.score || 0
+  const strong = results.filter((r) => (r.score || 0) >= topScore * 0.6).slice(0, 2)
+  const body = (strong.length ? strong : results.slice(0, 1))
+    .map((r) => `• ${excerptSummary([r], 2)}`)
+    .join('\n')
+  return (
+    `Based on the most relevant parts of the document on “${topic}”:\n\n${body}\n\n` +
+    `Want me to simplify this, give an example, or turn it into a mnemonic?`
+  )
+}
+
+function mockAnswer(question, deck, results = null) {
   const topic = deck?.topic || 'this deck'
   const cards = deck?.cards || []
+  // Prefer retrieved document passages when the deck has a searchable index.
+  if (results && results.length) {
+    return mockAnswerFromContext(question, topic, results)
+  }
   if (!cards.length) {
     return `I don't have any cards for “${topic}” yet, so there's nothing to draw on. Generate a few flashcards first and I can explain, simplify or quiz you on them.`
   }
@@ -395,20 +487,43 @@ function mockAnswer(question, deck) {
 }
 
 // Answer a study-assistant question about a deck / PDF.
-//   { question, deck, history: Message[], settings } -> Promise<string>
-// `history` is the prior conversation (user/assistant turns) for follow-up context.
-export async function answerAssistant({ question, deck, history = [], settings }) {
+//   { question, deck, history: Message[], settings, user } -> Promise<string>
+// `history` is the prior conversation (user/assistant turns) for follow-up
+// context. When the deck has a retrieval index (built from an uploaded PDF), the
+// shared RAG layer selects the most relevant document passages and grounds the
+// answer in them — otherwise it falls back to the deck's flashcards as before.
+export async function answerAssistant({ question, deck, history = [], settings, user, coach }) {
   const q = String(question || '').trim()
   if (!q) throw new Error('Ask a question to get started.')
   const provider = settings?.provider || 'demo'
 
-  // Map prior turns to provider roles, bounded for token safety.
+  // 1. Retrieve the most relevant passages from the FULL document via the shared
+  //    RAG layer. The query is enriched with recent context so follow-up
+  //    questions still retrieve well. Best-effort — null when the deck has no
+  //    index (topic decks) or retrieval isn't possible, in which case the
+  //    assistant falls back to the flashcards exactly as before.
+  const retrievalQuery = buildRetrievalQuery(q, history)
+  const retrieved = await retrieveForDeck({ deck, user, query: retrievalQuery, settings, topK: 5 })
+
+  // 2. Map prior turns to provider roles for conversation history / follow-ups,
+  //    bounded for token safety.
   const prior = (history || [])
     .filter((m) => m && (m.role === 'user' || m.role === 'assistant') && m.text)
     .slice(-MAX_HISTORY)
     .map((m) => ({ role: m.role, content: String(m.text) }))
   const msgs = [...prior, { role: 'user', content: q }]
-  const system = `${buildAssistantSystem(deck)}\n\nFLASHCARDS:\n${deckContext(deck)}`
+
+  // 3. Assemble the system prompt: the coaching snapshot (progress-aware
+  //    guidance), then the retrieved document passages (primary source of truth
+  //    for content questions), then the deck's flashcards as supplementary
+  //    context. Any provider can now both coach and answer from the document.
+  const coachBlock = coach
+    ? `STUDENT PROGRESS SNAPSHOT:\n${coachContextText(coach)}\n\n`
+    : ''
+  const sourceBlock = retrieved
+    ? `SOURCE EXCERPTS (most relevant passages from the full document):\n${retrieved.text}\n\n`
+    : ''
+  const system = `${buildAssistantSystem(deck, !!retrieved, !!coach)}\n\n${coachBlock}${sourceBlock}FLASHCARDS:\n${deckContext(deck)}`
 
   if (provider === 'openai') {
     if (!settings.apiKey) throw new Error('Add your OpenAI API key in Settings first.')
@@ -422,9 +537,14 @@ export async function answerAssistant({ question, deck, history = [], settings }
     return anthropicChat(system, trimmed, settings.apiKey)
   }
 
-  // Demo mode — offline, deck-aware mock.
+  // Demo mode — offline. Coaching questions are answered from the progress
+  // briefing; questions that call for a visual get a generated diagram / table;
+  // everything else falls back to retrieved passages / flashcards.
   await delay(600)
-  return mockAnswer(q, deck)
+  if (coach && isCoachingQuestion(q)) return coachReply(q, coach)
+  const visual = maybeVisual({ question: q, deck, results: retrieved?.results })
+  if (visual) return visual
+  return mockAnswer(q, deck, retrieved?.results)
 }
 
 // Generate flashcards from a block of source content (e.g. extracted PDF text).

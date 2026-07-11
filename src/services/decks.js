@@ -53,6 +53,7 @@ export function saveDeck(uid, deck) {
   if (deck.pageRange) data.pageRange = deck.pageRange
   if (deck.quiz) data.quiz = deck.quiz // best score + last quiz attempt
   if (deck.plan) data.plan = deck.plan // study-plan config (schedule derived live)
+  if (deck.rag) data.rag = deck.rag // retrieval-index marker ({ count, dim, provider })
 
   return setDoc(doc(db, 'users', uid, 'decks', deck.id), data)
 }

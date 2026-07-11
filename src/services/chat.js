@@ -12,7 +12,7 @@
 // NOTE: this is the storage + streaming foundation only. AI replies are NOT
 // generated here yet — the caller wires the model in later.
 
-import { doc, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore'
+import { doc, collection, getDocs, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore'
 import { db } from './firebase'
 import { makeId } from '../utils/storage.js'
 
@@ -84,6 +84,23 @@ export function subscribeToChat(uid, deckId, onData, onError) {
 
 export function saveChat(uid, deckId, messages) {
   return setDoc(chatDoc(uid, deckId), { messages, updatedAt: new Date().toISOString() })
+}
+
+// Load ALL of a user's conversations as a { [deckId]: { messages } } map. Used
+// by the Learning Intelligence engine to analyze AI interactions. Best-effort:
+// returns {} on failure so the dashboard degrades gracefully.
+export async function loadAllChats(uid) {
+  try {
+    const snap = await getDocs(collection(db, 'users', uid, 'chats'))
+    const all = {}
+    snap.forEach((d) => {
+      all[d.id] = { messages: d.data().messages || [] }
+    })
+    return all
+  } catch (e) {
+    console.error('[Flashcards] Failed to load conversations for insights:', e)
+    return {}
+  }
 }
 
 export function deleteChat(uid, deckId) {

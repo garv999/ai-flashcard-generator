@@ -260,3 +260,30 @@ export function ClockIcon(props) {
     </svg>
   )
 }
+
+export function BrainIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M9.5 4a2.5 2.5 0 0 0-2.5 2.5A2.5 2.5 0 0 0 5 9a2.5 2.5 0 0 0 1.5 2.3A2.5 2.5 0 0 0 9 15.5a2.5 2.5 0 0 0 3 2.4V4.5A2.5 2.5 0 0 0 9.5 4z" />
+      <path d="M14.5 4A2.5 2.5 0 0 1 17 6.5 2.5 2.5 0 0 1 19 9a2.5 2.5 0 0 1-1.5 2.3A2.5 2.5 0 0 1 15 15.5a2.5 2.5 0 0 1-3 2.4" />
+    </svg>
+  )
+}
+
+export function TrendUpIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M3 17l6-6 4 4 8-8" />
+      <path d="M17 7h4v4" />
+    </svg>
+  )
+}
+
+export function TrendDownIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M3 7l6 6 4-4 8 8" />
+      <path d="M17 17h4v-4" />
+    </svg>
+  )
+}

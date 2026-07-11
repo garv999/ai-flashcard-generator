@@ -1,9 +1,10 @@
-import { BoltIcon, SettingsIcon, LogInIcon, LogOutIcon, UserIcon, ChartIcon } from './Icons.jsx'
+import { BoltIcon, SettingsIcon, LogInIcon, LogOutIcon, UserIcon, ChartIcon, BrainIcon } from './Icons.jsx'
 
 export default function Header({
   provider,
   onOpenSettings,
   onOpenAnalytics,
+  onOpenIntelligence,
   user,
   onSignIn,
   onLogout,
@@ -28,6 +29,15 @@ export default function Header({
       </div>
 
       <div className="header-actions">
+        <button
+          className="icon-btn"
+          onClick={onOpenIntelligence}
+          aria-label="Learning intelligence"
+          title="Learning intelligence"
+        >
+          <BrainIcon />
+        </button>
+
         <button
           className="icon-btn"
           onClick={onOpenAnalytics}

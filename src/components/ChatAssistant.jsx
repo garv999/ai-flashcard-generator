@@ -1,5 +1,17 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { CloseIcon, SendIcon, MessageIcon, SparklesIcon } from './Icons.jsx'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import {
+  CloseIcon,
+  SendIcon,
+  MessageIcon,
+  SparklesIcon,
+  RotateIcon,
+  TargetIcon,
+  FlameIcon,
+  ChartIcon,
+  CardsIcon,
+  CheckIcon,
+  ChevronRightIcon,
+} from './Icons.jsx'
 import {
   makeMessage,
   loadLocalChat,
@@ -8,8 +20,10 @@ import {
   saveChat,
 } from '../services/chat.js'
 import { answerAssistant } from '../services/aiService.js'
+import { buildCoachBriefing } from '../services/coach.js'
+import MessageContent from './MessageContent.jsx'
 
-// One-tap study prompts covering the assistant's core skills. Each sends a
+// One-tap study prompts covering the assistant's content skills. Each sends a
 // ready-made question; users can also type their own (including follow-ups).
 const QUICK_ACTIONS = [
   { key: 'explain', label: 'Explain', prompt: 'Explain the most important concept in this deck clearly.' },
@@ -19,11 +33,41 @@ const QUICK_ACTIONS = [
   { key: 'mnemonic', label: 'Mnemonic', prompt: 'Create a mnemonic to help me remember the key facts in this deck.' },
 ]
 
-// A slide-in study-assistant panel scoped to a single deck / PDF. Handles the
-// conversation UI, per-deck history, typing indicator, input and auto-scroll,
-// persisting to localStorage (Demo) or Firestore (signed in). Answers come from
-// the shared AI service using the deck's cards as context.
-export default function ChatAssistant({ deck, user, settings, open, onClose }) {
+// Coach-oriented prompts, answered from the learner's live progress data.
+const COACH_PROMPTS = [
+  { key: 'next', label: 'What next?', prompt: 'What should I study next?' },
+  { key: 'weak', label: 'Weak areas', prompt: 'Where am I weak and what should I focus on?' },
+  { key: 'load', label: "Today's plan", prompt: 'How much should I study today?' },
+  { key: 'ready', label: 'Am I ready?', prompt: 'Am I on track for my upcoming exam or interview?' },
+]
+
+// Recommendation-kind → icon.
+const KIND_ICON = {
+  exam: TargetIcon,
+  review: RotateIcon,
+  'weak-quiz': ChartIcon,
+  'weak-retention': ChartIcon,
+  streak: FlameIcon,
+  'new-deck': CardsIcon,
+  'caught-up': CheckIcon,
+  empty: SparklesIcon,
+}
+
+// A slide-in AI Study Coach panel. Beyond answering questions about the deck /
+// PDF (with RAG), it analyzes the learner's progress across all decks — spaced
+// repetition, quizzes, analytics, mastery and study plans — to recommend what
+// to study next, surface weak areas, estimate workload and track exam prep.
+// Persists the conversation to localStorage (Demo) or Firestore (signed in).
+export default function ChatAssistant({
+  deck,
+  sets = [],
+  stats,
+  user,
+  settings,
+  open,
+  onClose,
+  onCoachAction,
+}) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [typing, setTyping] = useState(false)
@@ -33,6 +77,13 @@ export default function ChatAssistant({ deck, user, settings, open, onClose }) {
 
   const deckId = deck?.id
   const provider = settings?.provider || 'demo'
+
+  // Recompute the coaching briefing from live state whenever the panel opens or
+  // progress changes. Drives both the briefing UI and the AI's coaching answers.
+  const briefing = useMemo(
+    () => buildCoachBriefing({ sets, stats, activeId: deckId, now: Date.now() }),
+    [sets, stats, deckId, open],
+  )
 
   // Load / subscribe to this deck's conversation whenever the panel opens or the
   // active deck / auth state changes.
@@ -93,7 +144,14 @@ export default function ChatAssistant({ deck, user, settings, open, onClose }) {
       persist(base)
       setTyping(true)
       try {
-        const reply = await answerAssistant({ question: text, deck, history: prior, settings })
+        const reply = await answerAssistant({
+          question: text,
+          deck,
+          history: prior,
+          settings,
+          user,
+          coach: briefing,
+        })
         const next = [...base, makeMessage('assistant', reply)]
         setMessages(next)
         persist(next)
@@ -103,7 +161,19 @@ export default function ChatAssistant({ deck, user, settings, open, onClose }) {
         setTyping(false)
       }
     },
-    [input, typing, messages, deck, settings, persist],
+    [input, typing, messages, deck, settings, user, briefing, persist],
+  )
+
+  // Act on a recommendation card: jump to the recommended deck + study mode and
+  // close the panel. Cards without a target (informational) do nothing.
+  const act = useCallback(
+    (rec) => {
+      if (rec?.deckId && rec?.mode && onCoachAction) {
+        onCoachAction(rec.deckId, rec.mode)
+        onClose()
+      }
+    },
+    [onCoachAction, onClose],
   )
 
   if (!open) return null
@@ -116,7 +186,7 @@ export default function ChatAssistant({ deck, user, settings, open, onClose }) {
         className="chat-drawer"
         role="dialog"
         aria-modal="true"
-        aria-label={`Study assistant for ${deck?.topic || 'this deck'}`}
+        aria-label={`Study coach for ${deck?.topic || 'this deck'}`}
         onClick={(e) => e.stopPropagation()}
       >
         <header className="chat-head">
@@ -124,8 +194,16 @@ export default function ChatAssistant({ deck, user, settings, open, onClose }) {
             <SparklesIcon />
           </span>
           <div className="chat-head-titles">
-            <h2>Study assistant</h2>
+            <h2>Study coach</h2>
             <p title={deck?.topic}>{deck?.topic}</p>
+            {deck?.rag?.count > 0 && (
+              <span
+                className="chat-rag-badge"
+                title={`Full-document context: ${deck.rag.count} passages indexed`}
+              >
+                <SparklesIcon /> Full-document context
+              </span>
+            )}
           </div>
           <button
             type="button"
@@ -139,17 +217,62 @@ export default function ChatAssistant({ deck, user, settings, open, onClose }) {
 
         <div className="chat-messages" ref={listRef} data-lenis-prevent>
           {messages.length === 0 && !typing && (
-            <div className="chat-welcome">
-              <span className="chat-welcome-icon" aria-hidden="true">
+            <div className="chat-welcome coach-welcome">
+              <div className="coach-hero">
+                <span className="coach-hero-icon" aria-hidden="true">
+                  <SparklesIcon />
+                </span>
+                <div className="coach-hero-text">
+                  <p className="coach-hero-title">Your study coach</p>
+                  <p className="coach-hero-sub">
+                    {briefing.hasDecks
+                      ? `${briefing.totals.due} due · ~${briefing.workloadMin} min today · ${briefing.streak}-day streak`
+                      : 'Create a deck and I’ll build your plan.'}
+                  </p>
+                </div>
+              </div>
+
+              {briefing.recommendations.length > 0 && (
+                <div className="coach-recs">
+                  {briefing.recommendations.slice(0, 4).map((r) => {
+                    const Icon = KIND_ICON[r.kind] || SparklesIcon
+                    const actionable = !!(r.deckId && r.mode && onCoachAction)
+                    const inner = (
+                      <>
+                        <span className={`coach-rec-icon kind-${r.kind}`} aria-hidden="true">
+                          <Icon />
+                        </span>
+                        <span className="coach-rec-body">
+                          <span className="coach-rec-title">{r.title}</span>
+                          <span className="coach-rec-detail">{r.detail}</span>
+                        </span>
+                        {actionable && (
+                          <span className="coach-rec-cta">
+                            {r.cta}
+                            <ChevronRightIcon />
+                          </span>
+                        )}
+                      </>
+                    )
+                    return actionable ? (
+                      <button key={r.id} type="button" className="coach-rec" onClick={() => act(r)}>
+                        {inner}
+                      </button>
+                    ) : (
+                      <div key={r.id} className="coach-rec coach-rec-static">
+                        {inner}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+
+              <p className="coach-ask-hint">
                 <MessageIcon />
-              </span>
-              <p className="chat-welcome-title">Ask about “{deck?.topic}”</p>
-              <p className="chat-welcome-sub">
-                Ask a question, get an explanation, or request a summary of this {kind}. Your
-                conversation is saved here.
+                Ask me anything about your progress or this {kind}
               </p>
               <div className="chat-welcome-actions">
-                {QUICK_ACTIONS.map((a) => (
+                {COACH_PROMPTS.map((a) => (
                   <button
                     key={a.key}
                     type="button"
@@ -166,7 +289,9 @@ export default function ChatAssistant({ deck, user, settings, open, onClose }) {
 
           {messages.map((m) => (
             <div key={m.id} className={`chat-msg chat-msg-${m.role}`}>
-              <div className="chat-bubble">{m.text}</div>
+              <div className="chat-bubble">
+                {m.role === 'assistant' ? <MessageContent text={m.text} /> : m.text}
+              </div>
             </div>
           ))}
 
