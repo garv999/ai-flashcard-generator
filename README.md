@@ -1,24 +1,55 @@
 # AI Flashcard Generator
 
-A real-time web application that turns any topic into a study-ready deck of question-and-answer flashcards in seconds. Enter a subject, and an AI model instantly generates a set of cards you can flip through to study. Every deck is saved in the browser, so users can return anytime — no account and no backend required.
+An AI-powered study platform that turns any topic — or an uploaded PDF — into a
+study-ready deck of flashcards, then helps you actually learn the material with
+spaced repetition, quizzes, a personalized study plan, an AI study coach, and a
+learning-intelligence dashboard. It works instantly in the browser with no
+account required, and optionally syncs to the cloud when you sign in.
 
 ![React](https://img.shields.io/badge/React-18-61dafb?logo=react&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-5-646cff?logo=vite&logoColor=white)
+![Firebase](https://img.shields.io/badge/Firebase-Auth%20%2B%20Firestore-ffca28?logo=firebase&logoColor=black)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
 ---
 
 ## Features
 
+### Generate
+
 - **Real-time AI generation** — enter a topic and receive a full deck on demand, with a skeleton loading state and clear error handling.
-- **Works out of the box (Demo mode)** — a built-in mock generator means the app runs instantly with no API key.
-- **Bring your own key** — switch to OpenAI (`gpt-4o-mini`) or Anthropic Claude (`claude-sonnet-5`) in Settings to generate real AI cards.
-- **Interactive 3D flip cards** — click a card to flip it with a smooth animation and reveal the answer.
-- **Local persistence** — all sets are stored in the browser's `localStorage`, so study material survives refreshes.
-- **Deck management** — browse, select, switch between, and delete saved sets.
-- **Adjustable deck size** — choose between 3 and 20 cards per set.
-- **Input validation** — enforces a minimum topic length for higher-quality prompts.
-- **Premium, responsive dark UI** — a token-based design system with the Inter typeface, gradient accents, custom SVG iconography, a deck progress bar, and polished micro-interactions, from desktop down to mobile.
+- **Generate from a PDF** — drop in a PDF (up to 20 MB), pick a page range, and turn its contents into flashcards. Text is extracted in the browser with `pdf.js`.
+- **Works out of the box (Demo mode)** — a built-in, offline mock generator means the app runs instantly with no API key.
+- **Bring your own key** — switch to OpenAI (`gpt-4o-mini`) or Anthropic Claude (`claude-sonnet-5`) in Settings for real AI generation.
+
+### Study
+
+- **Browse mode** — flip through cards with a 3D animation and a deck progress bar.
+- **Review mode (spaced repetition)** — an Anki-style SM-2 scheduler (`Again / Hard / Good / Easy`) shows the right cards at the right time and tracks due counts.
+- **Quiz mode** — auto-generated multiple-choice questions with instant feedback, a scored results screen, and retry-incorrect / restart options. Best score and last attempt persist per deck.
+- **Personalized study plan** — set a target date, daily study time, and confidence level to get an adaptive day-by-day roadmap (new cards + reviews per day, milestones, projected finish) that updates as you study.
+
+### AI Study Coach
+
+- **Chat assistant per deck / PDF** — ask questions, get explanations, simplify topics, generate examples, compare concepts, or build mnemonics.
+- **Retrieval-Augmented Generation (RAG)** — uploaded PDFs are chunked, embedded, and stored so the assistant answers from the **whole document**, not just the generated cards. Conversation history supports natural follow-ups.
+- **Progress-aware coaching** — the coach analyzes your spaced-repetition schedule, quiz results, analytics, and study plan to recommend what to study next, surface weak areas, estimate today's workload, and track exam/interview readiness.
+- **Visual learning** — when a concept is clearer shown visually, the assistant renders Mermaid **flowcharts, trees, timelines**, and **comparison tables**; simple questions stay as text.
+
+### Learning Intelligence
+
+- **Dedicated insights dashboard** — mines spaced-repetition data, quiz performance, analytics, and AI interactions to detect **weak concepts**, identify **frequently forgotten** cards, **predict learning gaps**, rank **revision priorities**, **recommend additional flashcards**, and generate **personalized insights** — with one-click actions to review or generate.
+- **Study analytics** — streaks, retention, per-deck mastery, card-maturity breakdown, and a GitHub-style activity heatmap.
+
+### Accounts & persistence
+
+- **Demo mode** — decks, progress, quizzes, plans, chats, and retrieval indexes are all saved in the browser's `localStorage`.
+- **Sign in to sync** — Google or email/password auth (Firebase). Signed-in data lives in Firestore and syncs across devices in real time; local Demo data migrates on first sign-in.
+
+### Experience
+
+- **Cinematic 3D hero** — a WebGL iPhone (React Three Fiber) that rotates on scroll, with a graphite/titanium design system.
+- **Premium, responsive dark UI** — token-based design, custom SVG iconography, smooth scrolling, and polished micro-interactions from desktop down to mobile.
 
 ---
 
@@ -32,37 +63,41 @@ npm install
 npm run dev
 ```
 
-Then open the URL Vite prints (default: http://localhost:5173).
-
-The app opens in Demo mode and works immediately — no key required.
+Then open the URL Vite prints (default: http://localhost:5173). The app opens in
+**Demo mode** and works immediately — no key and no account required.
 
 ### Using a Real AI Provider (Optional)
 
 1. Click the provider chip in the top-right (it reads "Demo mode").
 2. Choose OpenAI or Claude.
-3. Paste your API key. It is stored only in the browser's `localStorage` and sent directly to the provider.
+3. Paste your API key. It is stored only in the browser's `localStorage` and sent directly to the provider. The same key powers generation, the study coach, and PDF embeddings.
 
-> **Security note:** Calling AI APIs directly from the browser exposes the key to anyone using that browser session. For a production deployment, route requests through a small backend that holds the key server-side (see Future Improvements). Never commit an API key to a public repository.
+> **Security note:** Calling AI APIs directly from the browser exposes the key to anyone using that browser session. For a production deployment, route requests through a small backend that holds the key server-side. Never commit an API key to a public repository.
+
+### Enabling Cloud Sync (Optional)
+
+Sign-in and cross-device sync use Firebase. Copy `.env.example` to `.env` and fill
+in your Firebase project values (`VITE_FIREBASE_*`), then deploy the Firestore
+security rules in `firestore.rules`. Without these, the app still runs fully in
+Demo mode.
 
 ---
 
 ## How It Works
 
-1. Enter a topic (minimum 10 characters) — for example, "The French Revolution" or "React useEffect hook".
-2. The app sends a prompt requesting N question-and-answer pairs and parses the JSON response.
-3. The generated set is rendered as an interactive deck and saved to `localStorage`.
-4. Select any saved set and click cards to flip between question and answer.
+1. Enter a topic or upload a PDF; the app requests question-and-answer pairs and parses the JSON response (PDFs are chunked to stay within token limits).
+2. The deck is rendered and saved — to `localStorage` in Demo mode, or Firestore when signed in.
+3. Study with Browse, Review (SRS), or Quiz; set a study plan; and open the coach to ask questions grounded in the deck or the full PDF.
+4. As you study, the analytics and Learning Intelligence dashboards recompute automatically from your live progress.
 
 ---
 
 ## Accessibility
 
-The interface is built to be usable with a keyboard and assistive technologies:
-
-- **Keyboard navigation** — Left/Right arrow keys move between cards; Enter or Space flips the focused card.
+- **Keyboard navigation** — arrow keys move between cards; number/letter keys answer quizzes; Enter/Space advance.
 - **Visible focus rings** on every interactive element via `:focus-visible`.
-- **ARIA semantics** — labelled controls, a `progressbar` for deck progress, `role="alert"` errors, and `aria-live` regions for validation and loading.
-- **Accessible dialog** — the Settings modal uses `role="dialog"`/`aria-modal`, moves focus on open, and closes on Escape.
+- **ARIA semantics** — labelled controls, `progressbar` elements, `role="alert"` errors, and `aria-live` regions.
+- **Accessible dialogs** — modals and the coach drawer use `role="dialog"`/`aria-modal`, move focus on open, and close on Escape.
 - **Reduced motion** — animations are minimised when `prefers-reduced-motion` is set.
 
 ---
@@ -74,24 +109,41 @@ ai-flashcard-generator/
 ├── index.html
 ├── package.json
 ├── vite.config.js
+├── firestore.rules              # Firestore security rules (per-user data)
+├── .env.example                 # Firebase configuration template
 ├── public/
-│   └── favicon.svg
+│   ├── favicon.svg
+│   └── iphone.glb               # 3D hero model
 └── src/
     ├── main.jsx                 # App entry point
     ├── App.jsx                  # State and orchestration
     ├── index.css                # Design system (tokens, dark theme, animations)
     ├── components/
-    │   ├── Header.jsx
-    │   ├── TopicForm.jsx        # Topic input and validation
-    │   ├── Sidebar.jsx          # Saved-set list
-    │   ├── StudyView.jsx        # Deck navigation and progress
-    │   ├── Flashcard.jsx        # 3D flip card
-    │   ├── SettingsModal.jsx    # Provider, API key, deck size
-    │   └── Icons.jsx            # Reusable SVG icon components
+    │   ├── Header.jsx  Sidebar.jsx  TopicForm.jsx  PdfUpload.jsx
+    │   ├── StudyView.jsx  Flashcard.jsx  ReviewSession.jsx  QuizSession.jsx
+    │   ├── StudyPlanPanel.jsx           # Adaptive study plan
+    │   ├── ChatAssistant.jsx            # AI study coach (chat + RAG + visuals)
+    │   ├── MessageContent.jsx  Mermaid.jsx   # Rich message + diagram rendering
+    │   ├── AnalyticsModal.jsx            # Study analytics dashboard
+    │   ├── LearningIntelligenceModal.jsx # Learning-intelligence dashboard
+    │   ├── AuthModal.jsx  SettingsModal.jsx
+    │   ├── CinematicHero.jsx  Iphone3D.jsx  Ambient.jsx  HeroStats.jsx
+    │   └── Icons.jsx                     # Reusable SVG icons
     ├── services/
-    │   └── aiService.js         # Demo / OpenAI / Anthropic generators
-    └── utils/
-        └── storage.js           # localStorage helpers
+    │   ├── aiService.js         # Demo / OpenAI / Anthropic generation + coach
+    │   ├── pdfService.js        # In-browser PDF text extraction
+    │   ├── srs.js               # SM-2 spaced-repetition scheduling
+    │   ├── quiz.js              # Multiple-choice quiz engine
+    │   ├── analytics.js         # Streaks, retention, mastery, activity
+    │   ├── studyPlan.js         # Adaptive day-by-day plan
+    │   ├── coach.js             # Study-coach analysis + recommendations
+    │   ├── intelligence.js      # Learning-intelligence engine
+    │   ├── diagrams.js          # Offline Mermaid / table generation
+    │   ├── chunking.js  embeddings.js  retrieval.js   # RAG pipeline
+    │   ├── chat.js  decks.js    # Conversation + deck persistence
+    │   └── firebase.js          # Firebase Auth + Firestore init
+    ├── hooks/                   # Auth + scroll/animation hooks
+    └── utils/                   # storage + auth-error helpers
 ```
 
 ---
@@ -99,10 +151,15 @@ ai-flashcard-generator/
 ## Tech Stack
 
 - **React 18** (Hooks) — component-driven, real-time UI
-- **Vite 5** — fast development server and build tooling
-- **OpenAI / Anthropic APIs** — optional real flashcard generation
-- **localStorage** — client-side persistence
-- **Plain CSS** — a token-based design system with custom properties, a CSS 3D flip animation, and no UI framework
+- **Vite 5** — fast dev server and build tooling
+- **Firebase** — Google/email auth and Firestore cloud sync
+- **OpenAI / Anthropic APIs** — optional real generation, coaching, and embeddings
+- **RAG** — dependency-free chunking, embeddings (OpenAI `text-embedding-3-small` or a local hashing embedder), and cosine-similarity retrieval, stored quantized for efficiency
+- **pdf.js** — in-browser PDF text extraction
+- **Mermaid** (lazy-loaded) — flowchart / tree / timeline diagram rendering
+- **React Three Fiber + Drei** — the WebGL 3D hero
+- **GSAP + Lenis** — scroll-driven animation and smooth scrolling
+- **Plain CSS** — a token-based design system with no UI framework
 - **Inline SVG icons** — dependency-free, no icon library
 
 ---
@@ -110,13 +167,10 @@ ai-flashcard-generator/
 ## Future Improvements
 
 - **Backend proxy** so API keys are never exposed to the browser.
-- **User accounts and cloud sync** (Firebase / Supabase) to share decks across devices.
-- **Spaced-repetition system (SRS)** — Anki-style SM-2 scheduling for better retention.
 - **Edit and reorder cards** after generation.
 - **Export and import** decks (JSON, CSV, Anki).
-- **Multiple question types** — multiple-choice, true/false, fill-in-the-blank.
-- **Progress tracking and statistics** — streaks, accuracy, per-deck mastery.
 - **Streaming responses** so cards appear progressively as they generate.
+- **Shared/collaborative decks** across users.
 
 ---
 
