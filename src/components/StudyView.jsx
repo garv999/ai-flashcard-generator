@@ -2,13 +2,14 @@ import { useState, useEffect, useCallback } from 'react'
 import Flashcard from './Flashcard.jsx'
 import ReviewSession from './ReviewSession.jsx'
 import QuizSession from './QuizSession.jsx'
+import StudyPlanPanel from './StudyPlanPanel.jsx'
 import ChatAssistant from './ChatAssistant.jsx'
 import { ChevronLeftIcon, ChevronRightIcon, CardsIcon, MessageIcon } from './Icons.jsx'
 import { deckDueCount } from '../services/srs.js'
 
-export default function StudyView({ set, onRate, onSaveQuizResult, user, settings }) {
+export default function StudyView({ set, onRate, onSaveQuizResult, onSavePlan, user, settings }) {
   const [index, setIndex] = useState(0)
-  const [mode, setMode] = useState('browse') // 'browse' | 'review' | 'quiz'
+  const [mode, setMode] = useState('browse') // 'browse' | 'review' | 'quiz' | 'plan'
   const [chatOpen, setChatOpen] = useState(false)
 
   // Reset to the first card, back to browsing, and close the assistant when
@@ -96,6 +97,15 @@ export default function StudyView({ set, onRate, onSaveQuizResult, user, setting
           >
             Quiz
           </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mode === 'plan'}
+            className={`study-mode ${mode === 'plan' ? 'active' : ''}`}
+            onClick={() => setMode('plan')}
+          >
+            Plan
+          </button>
         </div>
 
           <button
@@ -119,6 +129,13 @@ export default function StudyView({ set, onRate, onSaveQuizResult, user, setting
           set={set}
           onSaveResult={onSaveQuizResult}
           onExit={() => setMode('browse')}
+        />
+      ) : mode === 'plan' ? (
+        <StudyPlanPanel
+          key={set.id}
+          deck={set}
+          onSave={(config) => onSavePlan(set.id, config)}
+          onReset={() => onSavePlan(set.id, null)}
         />
       ) : (
         <>

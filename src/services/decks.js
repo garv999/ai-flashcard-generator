@@ -52,6 +52,7 @@ export function saveDeck(uid, deck) {
   if (deck.uploadDate) data.uploadDate = deck.uploadDate
   if (deck.pageRange) data.pageRange = deck.pageRange
   if (deck.quiz) data.quiz = deck.quiz // best score + last quiz attempt
+  if (deck.plan) data.plan = deck.plan // study-plan config (schedule derived live)
 
   return setDoc(doc(db, 'users', uid, 'decks', deck.id), data)
 }

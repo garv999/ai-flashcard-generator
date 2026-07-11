@@ -280,6 +280,26 @@ export default function App() {
     }
   }
 
+  // Persist (or clear) a deck's study-plan config. Only the lightweight config
+  // rides on the deck; the day-by-day schedule is derived live from card state.
+  // Passing `config = null` removes the plan. Same persistence path as reviews.
+  async function handleSavePlan(deckId, config) {
+    const deck = sets.find((d) => d.id === deckId)
+    if (!deck) return
+    const updatedDeck = { ...deck }
+    if (config) updatedDeck.plan = config
+    else delete updatedDeck.plan
+    setSets((prev) => prev.map((d) => (d.id === deckId ? updatedDeck : d)))
+    if (user) {
+      try {
+        await saveDeck(user.uid, updatedDeck)
+      } catch (err) {
+        console.error('[Flashcards] Failed to save study plan:', err)
+        setCloudWarning(true)
+      }
+    }
+  }
+
   async function handleLogout() {
     setAuthBusy(true)
     try {
@@ -374,6 +394,7 @@ export default function App() {
               set={activeSet}
               onRate={handleRateCard}
               onSaveQuizResult={handleSaveQuizResult}
+              onSavePlan={handleSavePlan}
               user={user}
               settings={settings}
             />
