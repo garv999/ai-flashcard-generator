@@ -243,10 +243,13 @@ export async function generateFlashcards(topic, settings) {
 // Study Assistant (chat)
 //
 // answerAssistant() replies to a student's question about the currently selected
-// deck / PDF. The deck's flashcards are the assistant's source of truth (the raw
-// PDF text isn't persisted). It supports follow-ups via the conversation history
-// and can explain, simplify, give examples, compare concepts and build mnemonics
-// — all driven by the prompt. Returns a plain-text answer string.
+// deck / PDF. For PDF-sourced decks the source of truth is the document itself,
+// reached through the shared RAG layer — the most relevant passages when a query
+// matches, otherwise a bounded overview of the document lead — with the deck's
+// flashcards as supplementary context. Topic decks (no index) use the flashcards
+// alone. It supports follow-ups via the conversation history and can explain,
+// simplify, give examples, compare concepts and build mnemonics — all driven by
+// the prompt. Returns a plain-text answer string.
 // ---------------------------------------------------------------------------
 const MAX_HISTORY = 12 // prior turns sent for context (token safety)
 const MAX_CONTEXT_CARDS = 40 // cards included as source material
@@ -520,9 +523,11 @@ export async function answerAssistant({ question, deck, history = [], settings, 
   const coachBlock = coach
     ? `STUDENT PROGRESS SNAPSHOT:\n${coachContextText(coach)}\n\n`
     : ''
-  const sourceBlock = retrieved
-    ? `SOURCE EXCERPTS (most relevant passages from the full document):\n${retrieved.text}\n\n`
-    : ''
+  const sourceHeading =
+    retrieved?.mode === 'overview'
+      ? 'SOURCE TEXT (excerpt from the start of the full document):'
+      : 'SOURCE EXCERPTS (most relevant passages from the full document):'
+  const sourceBlock = retrieved ? `${sourceHeading}\n${retrieved.text}\n\n` : ''
   const system = `${buildAssistantSystem(deck, !!retrieved, !!coach)}\n\n${coachBlock}${sourceBlock}FLASHCARDS:\n${deckContext(deck)}`
 
   if (provider === 'openai') {
@@ -542,9 +547,16 @@ export async function answerAssistant({ question, deck, history = [], settings, 
   // everything else falls back to retrieved passages / flashcards.
   await delay(600)
   if (coach && isCoachingQuestion(q)) return coachReply(q, coach)
+  // Visuals are built from targeted passages only; the document-lead overview is
+  // fed to the text mock so Demo mode still "reads the PDF" when retrieval misses.
   const visual = maybeVisual({ question: q, deck, results: retrieved?.results })
   if (visual) return visual
-  return mockAnswer(q, deck, retrieved?.results)
+  const demoResults = retrieved?.results?.length
+    ? retrieved.results
+    : retrieved?.text
+      ? [{ chunk: { text: retrieved.text }, score: 0.05 }]
+      : null
+  return mockAnswer(q, deck, demoResults)
 }
 
 // Generate flashcards from a block of source content (e.g. extracted PDF text).

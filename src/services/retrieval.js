@@ -151,6 +151,24 @@ export function formatContext(results) {
   return results.map((r, i) => `[Excerpt ${i + 1}]\n${r.chunk.text}`).join('\n\n')
 }
 
+// Bounded "lead" of the source document, assembled from its first chunks. Used
+// as fallback context when semantic retrieval surfaces nothing relevant (a
+// common miss for paraphrased questions under the local embedder, or when an
+// OpenAI-embedded index can't embed the query right now) — so the assistant
+// still grounds on real document text instead of dropping back to flashcards.
+// Capped in characters to stay well within provider token limits.
+const OVERVIEW_CHAR_BUDGET = 2000
+export function overviewFromIndex(index, budget = OVERVIEW_CHAR_BUDGET) {
+  const chunks = index?.chunks || []
+  if (!chunks.length) return ''
+  let out = ''
+  for (const c of chunks) {
+    if (out.length >= budget) break
+    out += (out ? '\n\n' : '') + (c.text || '')
+  }
+  return out.length > budget ? `${out.slice(0, budget).trimEnd()}…` : out
+}
+
 // ---------- persistence: localStorage (Demo) ----------
 
 function loadLocalIndexes() {
@@ -238,19 +256,40 @@ export async function createAndSaveIndex({ deckId, text, settings, user, onProgr
   return indexMarker(index)
 }
 
-// THE reusable entry point for AI features: fetch the most relevant passages of
-// a deck's source document for a query. Best-effort — returns null (never
-// throws) when there's no index or retrieval isn't possible, so callers can
-// cleanly fall back to their existing context (e.g. flashcards).
+// THE reusable entry point for AI features: fetch source-document context for a
+// query. Prefers the most relevant passages (semantic retrieval); when none
+// clear the noise floor — or the query can't be embedded — it falls back to a
+// bounded overview of the document lead, so the assistant still has real source
+// text beyond the flashcards. Best-effort: returns null (never throws) only when
+// the deck has no index at all, so callers can cleanly fall back to flashcards.
+//
+// Result shape: { results, text, mode } where mode is 'passages' (targeted) or
+// 'overview' (document lead; results is []).
 export async function retrieveForDeck({ deck, deckId, user, query, settings, topK = DEFAULT_TOP_K }) {
   const id = deckId || deck?.id
-  if (!id || !query) return null
+  if (!id) return null
   try {
     const index = await loadIndex({ deckId: id, user })
     if (!index?.chunks?.length) return null
-    const results = await retrieve(index, query, settings, { topK })
-    if (!results.length) return null
-    return { results, text: formatContext(results) }
+
+    // Targeted semantic retrieval first — the best, most focused context.
+    if (query) {
+      try {
+        const results = await retrieve(index, query, settings, { topK })
+        if (results.length) return { results, text: formatContext(results), mode: 'passages' }
+      } catch (e) {
+        // Query couldn't be embedded (e.g. an OpenAI-embedded index with no key
+        // available now). Fall through to the overview rather than losing the
+        // document entirely.
+        console.warn('[Flashcards] Passage retrieval unavailable, using overview:', e?.message || e)
+      }
+    }
+
+    // Fallback: the document's lead, so we never drop to flashcards-only when
+    // the source text is right there in the index.
+    const overview = overviewFromIndex(index)
+    if (!overview) return null
+    return { results: [], text: overview, mode: 'overview' }
   } catch (e) {
     console.warn('[Flashcards] Retrieval unavailable, falling back:', e?.message || e)
     return null
