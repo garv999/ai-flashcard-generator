@@ -7,6 +7,7 @@ import {
   TargetIcon,
   SparklesIcon,
   LayersIcon,
+  CheckIcon,
 } from './Icons.jsx'
 import {
   totals,
@@ -18,6 +19,7 @@ import {
   maturityCounts,
   avgEase,
   deckProgress,
+  quizStats,
 } from '../services/analytics.js'
 
 const WEEKS = 13
@@ -48,6 +50,15 @@ function heatLevel(count) {
   if (count < 10) return 2
   if (count < 20) return 3
   return 4
+}
+
+// Short, locale-aware date for a quiz attempt's ISO timestamp. Returns '' when
+// the value is missing or unparseable so the UI can hide it gracefully.
+function formatAttemptDate(at) {
+  if (!at) return ''
+  const d = new Date(at)
+  if (Number.isNaN(d.getTime())) return ''
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
 function StatTile({ icon, value, label, accent }) {
@@ -132,6 +143,8 @@ export default function AnalyticsModal({ sets, stats, onClose }) {
   const deckRows = (sets || [])
     .map((s) => ({ id: s.id, topic: s.topic, ...deckProgress(s) }))
     .sort((a, b) => b.masteryPct - a.masteryPct)
+
+  const quiz = quizStats(sets)
 
   const nothingYet = t.reviews === 0 && maturity.total === 0
 
@@ -233,6 +246,58 @@ export default function AnalyticsModal({ sets, stats, onClose }) {
                 <Legend segments={maturitySegs} total={maturity.total} />
               </section>
             </div>
+
+            {/* Quiz performance */}
+            <section className="an-section">
+              <div className="an-section-head">
+                <h3>Quiz performance</h3>
+                <CheckIcon className="an-head-icon" />
+              </div>
+              {quiz.count === 0 ? (
+                <p className="an-quiz-empty">
+                  No quizzes taken yet — finish a quiz on any deck to see your best and latest scores here.
+                </p>
+              ) : (
+                <>
+                  <div className="an-quiz-tiles">
+                    <div className="an-mini">
+                      <CheckIcon />
+                      <span>{quiz.count}</span> deck{quiz.count === 1 ? '' : 's'} quizzed
+                    </div>
+                    <div className="an-mini">
+                      <TargetIcon />
+                      <span>{quiz.avgBest}%</span> avg best
+                    </div>
+                    <div className="an-mini">
+                      <SparklesIcon />
+                      <span>{quiz.topBest}%</span> top score
+                    </div>
+                  </div>
+                  <ul className="an-decks">
+                    {quiz.decks.map((d) => {
+                      const when = formatAttemptDate(d.last.at)
+                      return (
+                        <li key={d.id} className="an-deck">
+                          <div className="an-deck-top">
+                            <span className="an-deck-topic" title={d.topic}>
+                              {d.topic}
+                            </span>
+                            <span className="an-deck-pct">{d.best.pct}%</span>
+                          </div>
+                          <div className="an-deck-bar">
+                            <span className="an-deck-fill" style={{ width: `${d.best.pct}%` }} />
+                          </div>
+                          <span className="an-deck-sub">
+                            Best {d.best.correct}/{d.best.total} · Last {d.last.pct}% ({d.last.correct}/
+                            {d.last.total}){when ? ` · ${when}` : ''}
+                          </span>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </>
+              )}
+            </section>
 
             {/* Secondary summary */}
             <div className="an-summary">

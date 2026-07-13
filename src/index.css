@@ -3833,6 +3833,19 @@ button.coach-rec:active {
   color: var(--text-faint);
 }
 
+/* Quiz performance */
+.an-quiz-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--s-2);
+  margin-bottom: var(--s-4);
+}
+.an-quiz-empty {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
 /* Empty + footer */
 .an-empty {
   text-align: center;

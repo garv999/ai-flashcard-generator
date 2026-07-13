@@ -204,3 +204,31 @@ export function deckProgress(set) {
   const started = c.total - c.new
   return { ...c, started, masteryPct }
 }
+
+// Aggregate quiz history across decks. Each deck may carry a quiz record
+// (written by the quiz engine):
+//   deck.quiz = { best: Attempt, last: Attempt }
+//   Attempt   = { pct, correct, total, at }   (pct 0..100, at = ISO string)
+// Only decks that have actually been quizzed contribute; the rest are ignored
+// so an untouched library reports a clean empty state.
+export function quizStats(sets) {
+  const decks = []
+  for (const s of sets || []) {
+    const q = s?.quiz
+    if (!q || !q.best || typeof q.best.pct !== 'number') continue
+    decks.push({
+      id: s.id,
+      topic: s.topic,
+      best: q.best,
+      last: q.last || q.best,
+    })
+  }
+  decks.sort((a, b) => (b.best.pct || 0) - (a.best.pct || 0))
+
+  const count = decks.length
+  const avgBest = count
+    ? Math.round(decks.reduce((sum, d) => sum + (d.best.pct || 0), 0) / count)
+    : 0
+  const topBest = count ? Math.max(...decks.map((d) => d.best.pct || 0)) : 0
+  return { decks, count, avgBest, topBest }
+}
