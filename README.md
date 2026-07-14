@@ -68,11 +68,22 @@ Then open the URL Vite prints (default: http://localhost:5173). The app opens in
 
 ### Using a Real AI Provider (Optional)
 
-1. Click the provider chip in the top-right (it reads "Demo mode").
-2. Choose OpenAI or Claude.
-3. Paste your API key. It is stored only in the browser's `localStorage` and sent directly to the provider. The same key powers generation, the study coach, and PDF embeddings.
+Provider keys live **server-side** and are never exposed to the browser. All
+OpenAI/Anthropic calls — generation, the study coach, and PDF embeddings — are
+proxied through a small serverless function (`api/ai.js`) that injects the key
+from an environment variable.
 
-> **Security note:** Calling AI APIs directly from the browser exposes the key to anyone using that browser session. For a production deployment, route requests through a small backend that holds the key server-side. Never commit an API key to a public repository.
+1. Copy `.env.example` to `.env` and set `OPENAI_API_KEY` and/or `ANTHROPIC_API_KEY`
+   (note: **no** `VITE_` prefix — these must stay out of the client bundle).
+2. Run `npm run dev` (Vite mounts the proxy locally) or deploy to a host that runs
+   `api/` as serverless functions (e.g. Vercel), setting the same env vars there.
+3. In the app, open Settings and choose OpenAI or Claude. Providers without a
+   server-side key show as "Not configured on server".
+
+> **Security note:** The browser only ever talks to the app's own `/api/ai`
+> endpoint — the key is injected server-side and is never present in the client
+> bundle, `localStorage`, or any outbound browser request. Never commit a real
+> key; `.env` is gitignored.
 
 ### Enabling Cloud Sync (Optional)
 
@@ -166,7 +177,6 @@ ai-flashcard-generator/
 
 ## Future Improvements
 
-- **Backend proxy** so API keys are never exposed to the browser.
 - **Edit and reorder cards** after generation.
 - **Export and import** decks (JSON, CSV, Anki).
 - **Streaming responses** so cards appear progressively as they generate.

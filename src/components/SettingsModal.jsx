@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { CloseIcon } from './Icons.jsx'
+import { fetchProviderStatus } from '../services/aiProxy.js'
 
 const PROVIDERS = [
   { id: 'demo', name: 'Demo', sub: 'No key needed' },
@@ -9,6 +10,8 @@ const PROVIDERS = [
 
 export default function SettingsModal({ settings, onSave, onClose }) {
   const [draft, setDraft] = useState(settings)
+  // Which live providers the server has a key configured for. null = probing.
+  const [status, setStatus] = useState(null)
   const closeRef = useRef(null)
 
   // Move focus into the dialog on open and close on Escape.
@@ -21,6 +24,15 @@ export default function SettingsModal({ settings, onSave, onClose }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
+  // Ask the proxy which providers are configured (never returns a key itself).
+  useEffect(() => {
+    let alive = true
+    fetchProviderStatus().then((s) => alive && setStatus(s))
+    return () => {
+      alive = false
+    }
+  }, [])
+
   function update(patch) {
     setDraft((d) => ({ ...d, ...patch }))
   }
@@ -30,7 +42,9 @@ export default function SettingsModal({ settings, onSave, onClose }) {
     onClose()
   }
 
-  const needsKey = draft.provider !== 'demo'
+  // Demo is always available; live providers depend on a server-side key. While
+  // probing (status === null) we don't disable anything.
+  const isAvailable = (id) => id === 'demo' || !status || status[id]
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -60,41 +74,29 @@ export default function SettingsModal({ settings, onSave, onClose }) {
         <div className="provider-grid" role="radiogroup" aria-labelledby="provider-label">
           {PROVIDERS.map((p) => {
             const selected = draft.provider === p.id
+            const available = isAvailable(p.id)
             return (
               <button
                 key={p.id}
                 type="button"
                 role="radio"
                 aria-checked={selected}
-                className={`provider-card ${selected ? 'selected' : ''}`}
+                disabled={!available}
+                className={`provider-card ${selected ? 'selected' : ''} ${available ? '' : 'unavailable'}`}
                 onClick={() => update({ provider: p.id })}
               >
                 <strong>{p.name}</strong>
-                <span>{p.sub}</span>
+                <span>{available ? p.sub : 'Not configured on server'}</span>
               </button>
             )
           })}
         </div>
 
-        {needsKey && (
-          <>
-            <label className="field-label" htmlFor="apiKey">
-              {draft.provider === 'openai' ? 'OpenAI' : 'Anthropic'} API Key
-            </label>
-            <input
-              id="apiKey"
-              type="password"
-              className="text-input"
-              placeholder="Paste your key (stored only in this browser)"
-              value={draft.apiKey}
-              onChange={(e) => update({ apiKey: e.target.value })}
-            />
-            <p className="field-note">
-              Your key is saved in localStorage and sent directly to the provider from your
-              browser. Never commit it to a public repository.
-            </p>
-          </>
-        )}
+        <p className="field-note">
+          API keys are configured on the server and never sent from your browser. Demo mode runs
+          fully offline with no key. To enable OpenAI or Claude, set the matching key in the
+          server&apos;s environment.
+        </p>
 
         <label className="field-label" htmlFor="cardCount">
           Cards per set

@@ -1495,6 +1495,16 @@ a {
   box-shadow: 0 0 0 1px var(--accent), var(--glow);
 }
 
+.provider-card.unavailable {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.provider-card.unavailable:hover {
+  border-color: var(--border);
+  transform: none;
+}
+
 .text-input {
   width: 100%;
   background: var(--inset);

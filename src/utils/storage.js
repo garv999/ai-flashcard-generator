@@ -6,7 +6,6 @@ const SETTINGS_KEY = 'aifc.settings'
 
 const DEFAULT_SETTINGS = {
   provider: 'demo', // 'demo' | 'openai' | 'anthropic'
-  apiKey: '',
   cardCount: 10,
 }
 
@@ -33,11 +32,16 @@ export function clearSets() {
 }
 
 export function loadSettings() {
-  return { ...DEFAULT_SETTINGS, ...safeParse(localStorage.getItem(SETTINGS_KEY), {}) }
+  // Strip any legacy apiKey that older builds may have persisted — provider keys
+  // now live server-side and must never be kept in the browser.
+  const { apiKey, ...saved } = safeParse(localStorage.getItem(SETTINGS_KEY), {})
+  return { ...DEFAULT_SETTINGS, ...saved }
 }
 
 export function saveSettings(settings) {
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings))
+  // Never persist an API key, even if one is somehow present on the object.
+  const { apiKey, ...safe } = settings || {}
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(safe))
 }
 
 // Simple unique id without external dependencies.

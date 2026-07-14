@@ -3,14 +3,15 @@
 // generateFlashcards() returns an array of { question, answer } objects.
 // It supports three modes, chosen via the `provider` setting:
 //   - 'demo'      : a built-in mock generator. No API key, works offline.
-//   - 'openai'    : OpenAI Chat Completions API (gpt-4o-mini), key required.
-//   - 'anthropic' : Anthropic Claude Messages API, key required.
+//   - 'openai'    : OpenAI Chat Completions API (gpt-4o-mini).
+//   - 'anthropic' : Anthropic Claude Messages API.
 //
-// The OpenAI/Anthropic paths call the provider directly from the browser,
-// so the user supplies their own key via the Settings panel. For a public
-// production app you would proxy these calls through a small backend so the
-// key is never exposed — see the README "Future Improvements" section.
+// The OpenAI/Anthropic paths go through our own server-side proxy (`/api/ai`,
+// see src/services/aiProxy.js + api/ai.js): the browser sends only the request
+// body, and the key is injected server-side from an env var. No provider key is
+// ever present in the client bundle, localStorage, or outbound browser requests.
 
+import { callProvider } from './aiProxy.js'
 import { retrieveForDeck } from './retrieval.js'
 import { coachContextText, coachReply, isCoachingQuestion } from './coach.js'
 import { maybeVisual } from './diagrams.js'
@@ -158,59 +159,28 @@ function delay(ms) {
 // ---------------------------------------------------------------------------
 // OpenAI
 // ---------------------------------------------------------------------------
-async function openaiGenerate(userPrompt, apiKey) {
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      temperature: 0.7,
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: userPrompt },
-      ],
-    }),
+async function openaiGenerate(userPrompt) {
+  const json = await callProvider('openai', 'chat', {
+    model: 'gpt-4o-mini',
+    temperature: 0.7,
+    messages: [
+      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'user', content: userPrompt },
+    ],
   })
-
-  if (!res.ok) {
-    const detail = await res.text().catch(() => '')
-    throw new Error(`OpenAI request failed (${res.status}). ${detail.slice(0, 200)}`)
-  }
-
-  const json = await res.json()
   return extractCards(json.choices?.[0]?.message?.content)
 }
 
 // ---------------------------------------------------------------------------
 // Anthropic Claude
 // ---------------------------------------------------------------------------
-async function anthropicGenerate(userPrompt, apiKey, maxTokens = 1500) {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      // Required to allow direct browser calls.
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-5',
-      max_tokens: maxTokens,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: userPrompt }],
-    }),
+async function anthropicGenerate(userPrompt, maxTokens = 1500) {
+  const json = await callProvider('anthropic', 'chat', {
+    model: 'claude-sonnet-5',
+    max_tokens: maxTokens,
+    system: SYSTEM_PROMPT,
+    messages: [{ role: 'user', content: userPrompt }],
   })
-
-  if (!res.ok) {
-    const detail = await res.text().catch(() => '')
-    throw new Error(`Anthropic request failed (${res.status}). ${detail.slice(0, 200)}`)
-  }
-
-  const json = await res.json()
   const text = Array.isArray(json.content)
     ? json.content.map((b) => b.text || '').join('')
     : ''
@@ -225,13 +195,11 @@ export async function generateFlashcards(topic, settings) {
   const provider = settings.provider || 'demo'
 
   if (provider === 'openai') {
-    if (!settings.apiKey) throw new Error('Add your OpenAI API key in Settings first.')
-    return openaiGenerate(buildUserPrompt(topic, count), settings.apiKey)
+    return openaiGenerate(buildUserPrompt(topic, count))
   }
 
   if (provider === 'anthropic') {
-    if (!settings.apiKey) throw new Error('Add your Anthropic API key in Settings first.')
-    return anthropicGenerate(buildUserPrompt(topic, count), settings.apiKey)
+    return anthropicGenerate(buildUserPrompt(topic, count))
   }
 
   // Demo mode
@@ -308,49 +276,26 @@ function deckContext(deck, max = MAX_CONTEXT_CARDS) {
   return cards.map((c, i) => `${i + 1}. Q: ${c.question}\n   A: ${c.answer}`).join('\n')
 }
 
-async function openaiChat(system, msgs, apiKey) {
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      temperature: 0.5,
-      max_tokens: 700,
-      messages: [{ role: 'system', content: system }, ...msgs],
-    }),
+async function openaiChat(system, msgs) {
+  const json = await callProvider('openai', 'chat', {
+    model: 'gpt-4o-mini',
+    temperature: 0.5,
+    max_tokens: 700,
+    messages: [{ role: 'system', content: system }, ...msgs],
   })
-  if (!res.ok) {
-    const detail = await res.text().catch(() => '')
-    throw new Error(`OpenAI request failed (${res.status}). ${detail.slice(0, 200)}`)
-  }
-  const json = await res.json()
   const text = json.choices?.[0]?.message?.content?.trim()
   if (!text) throw new Error('Empty response from OpenAI.')
   return text
 }
 
-async function anthropicChat(system, msgs, apiKey) {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-5',
-      max_tokens: 800,
-      temperature: 0.5,
-      system,
-      messages: msgs,
-    }),
+async function anthropicChat(system, msgs) {
+  const json = await callProvider('anthropic', 'chat', {
+    model: 'claude-sonnet-5',
+    max_tokens: 800,
+    temperature: 0.5,
+    system,
+    messages: msgs,
   })
-  if (!res.ok) {
-    const detail = await res.text().catch(() => '')
-    throw new Error(`Anthropic request failed (${res.status}). ${detail.slice(0, 200)}`)
-  }
-  const json = await res.json()
   const text = Array.isArray(json.content) ? json.content.map((b) => b.text || '').join('').trim() : ''
   if (!text) throw new Error('Empty response from Anthropic.')
   return text
@@ -531,15 +476,13 @@ export async function answerAssistant({ question, deck, history = [], settings, 
   const system = `${buildAssistantSystem(deck, !!retrieved, !!coach)}\n\n${coachBlock}${sourceBlock}FLASHCARDS:\n${deckContext(deck)}`
 
   if (provider === 'openai') {
-    if (!settings.apiKey) throw new Error('Add your OpenAI API key in Settings first.')
-    return openaiChat(system, msgs, settings.apiKey)
+    return openaiChat(system, msgs)
   }
   if (provider === 'anthropic') {
-    if (!settings.apiKey) throw new Error('Add your Anthropic API key in Settings first.')
     // Anthropic requires the first message to be from the user.
     const trimmed = [...msgs]
     while (trimmed.length && trimmed[0].role !== 'user') trimmed.shift()
-    return anthropicChat(system, trimmed, settings.apiKey)
+    return anthropicChat(system, trimmed)
   }
 
   // Demo mode — offline. Coaching questions are answered from the progress
@@ -571,14 +514,6 @@ export async function generateFlashcardsFromContent(content, settings, { onProgr
     throw new Error('The PDF did not contain enough readable text to generate flashcards.')
   }
 
-  // Validate keys once, up front (before making any calls).
-  if (provider === 'openai' && !settings.apiKey) {
-    throw new Error('Add your OpenAI API key in Settings first.')
-  }
-  if (provider === 'anthropic' && !settings.apiKey) {
-    throw new Error('Add your Anthropic API key in Settings first.')
-  }
-
   const chunks = chunkText(content)
   const merged = []
   const seen = new Set()
@@ -588,9 +523,9 @@ export async function generateFlashcardsFromContent(content, settings, { onProgr
 
     let cards
     if (provider === 'openai') {
-      cards = await openaiGenerate(buildContentPrompt(chunks[i], perChunk), settings.apiKey)
+      cards = await openaiGenerate(buildContentPrompt(chunks[i], perChunk))
     } else if (provider === 'anthropic') {
-      cards = await anthropicGenerate(buildContentPrompt(chunks[i], perChunk), settings.apiKey, 2000)
+      cards = await anthropicGenerate(buildContentPrompt(chunks[i], perChunk), 2000)
     } else {
       await delay(500)
       cards = mockGenerateFromContent(chunks[i], perChunk)

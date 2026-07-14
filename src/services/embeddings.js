@@ -11,6 +11,12 @@
 // lexical overlap well enough for within-document semantic retrieval and makes
 // Demo mode genuinely work without a network. All vectors are unit-normalised,
 // so cosine similarity reduces to a dot product.
+//
+// OpenAI embeddings go through the same server-side proxy as the chat/generation
+// calls (src/services/aiProxy.js) — the key is injected server-side and never
+// reaches the browser.
+
+import { callProvider } from './aiProxy.js'
 
 export const LOCAL_DIM = 384
 const OPENAI_MODEL = 'text-embedding-3-small'
@@ -78,17 +84,8 @@ export function resolveEmbedder(settings) {
   return { provider: 'local', model: 'hash-v1', dim: LOCAL_DIM, needsKey: false }
 }
 
-async function openaiEmbedBatch(inputs, apiKey) {
-  const res = await fetch('https://api.openai.com/v1/embeddings', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({ model: OPENAI_MODEL, input: inputs }),
-  })
-  if (!res.ok) {
-    const detail = await res.text().catch(() => '')
-    throw new Error(`OpenAI embeddings failed (${res.status}). ${detail.slice(0, 200)}`)
-  }
-  const json = await res.json()
+async function openaiEmbedBatch(inputs) {
+  const json = await callProvider('openai', 'embeddings', { model: OPENAI_MODEL, input: inputs })
   // Keep provider order stable, then normalise so cosine == dot product.
   return (json.data || [])
     .sort((a, b) => a.index - b.index)
@@ -102,13 +99,11 @@ export async function embedTexts(texts, embedder, settings, { onProgress } = {})
   if (!list.length) return []
 
   if (embedder.provider === 'openai') {
-    const key = settings?.apiKey
-    if (!key) throw new Error('An OpenAI API key is required to build embeddings.')
     const out = []
     const batches = Math.ceil(list.length / OPENAI_BATCH)
     for (let b = 0; b < batches; b++) {
       const slice = list.slice(b * OPENAI_BATCH, (b + 1) * OPENAI_BATCH)
-      const vecs = await openaiEmbedBatch(slice, key)
+      const vecs = await openaiEmbedBatch(slice)
       out.push(...vecs)
       if (onProgress) onProgress({ current: Math.min((b + 1) * OPENAI_BATCH, list.length), total: list.length })
     }
