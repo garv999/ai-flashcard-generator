@@ -3416,6 +3416,31 @@ button.coach-rec:active {
   }
 }
 
+/* Blinking caret shown at the end of a streaming assistant message. */
+.chat-caret {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  background: var(--accent, currentColor);
+  animation: chat-caret-blink 1s steps(2, start) infinite;
+}
+@keyframes chat-caret-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chat-caret {
+    animation: none;
+  }
+}
+
 .chat-notice {
   margin: 0;
   padding: 10px var(--s-5);

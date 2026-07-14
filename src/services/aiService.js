@@ -11,7 +11,7 @@
 // body, and the key is injected server-side from an env var. No provider key is
 // ever present in the client bundle, localStorage, or outbound browser requests.
 
-import { callProvider } from './aiProxy.js'
+import { callProvider, streamProvider } from './aiProxy.js'
 import { retrieveForDeck } from './retrieval.js'
 import { coachContextText, coachReply, isCoachingQuestion } from './coach.js'
 import { maybeVisual } from './diagrams.js'
@@ -180,6 +180,24 @@ function delay(ms, signal) {
   })
 }
 
+// Reveal a finished Demo answer incrementally so it "streams" like a live
+// provider. Emits small word-groups over roughly 700ms total, honouring aborts.
+async function streamOut(text, onToken, signal) {
+  if (!onToken) return text
+  const groups = (text.match(/\S+\s*/g) || [text]).reduce((acc, w, i) => {
+    if (i % 2 === 0) acc.push(w)
+    else acc[acc.length - 1] += w
+    return acc
+  }, [])
+  const per = Math.min(40, Math.max(10, Math.floor(700 / Math.max(groups.length, 1))))
+  for (const g of groups) {
+    throwIfAborted(signal)
+    onToken(g)
+    await delay(per, signal)
+  }
+  return text
+}
+
 // ---------------------------------------------------------------------------
 // OpenAI
 // ---------------------------------------------------------------------------
@@ -300,36 +318,38 @@ function deckContext(deck, max = MAX_CONTEXT_CARDS) {
   return cards.map((c, i) => `${i + 1}. Q: ${c.question}\n   A: ${c.answer}`).join('\n')
 }
 
-async function openaiChat(system, msgs, signal) {
-  const json = await callProvider(
-    'openai',
-    'chat',
-    {
-      model: 'gpt-4o-mini',
-      temperature: 0.5,
-      max_tokens: 700,
-      messages: [{ role: 'system', content: system }, ...msgs],
-    },
-    { signal },
-  )
+async function openaiChat(system, msgs, { signal, onToken } = {}) {
+  const body = {
+    model: 'gpt-4o-mini',
+    temperature: 0.5,
+    max_tokens: 700,
+    messages: [{ role: 'system', content: system }, ...msgs],
+  }
+  if (onToken) {
+    const text = await streamProvider('openai', 'chat', body, { signal, onToken })
+    if (!text.trim()) throw new Error('Empty response from OpenAI.')
+    return text.trim()
+  }
+  const json = await callProvider('openai', 'chat', body, { signal })
   const text = json.choices?.[0]?.message?.content?.trim()
   if (!text) throw new Error('Empty response from OpenAI.')
   return text
 }
 
-async function anthropicChat(system, msgs, signal) {
-  const json = await callProvider(
-    'anthropic',
-    'chat',
-    {
-      model: 'claude-sonnet-5',
-      max_tokens: 800,
-      temperature: 0.5,
-      system,
-      messages: msgs,
-    },
-    { signal },
-  )
+async function anthropicChat(system, msgs, { signal, onToken } = {}) {
+  const body = {
+    model: 'claude-sonnet-5',
+    max_tokens: 800,
+    temperature: 0.5,
+    system,
+    messages: msgs,
+  }
+  if (onToken) {
+    const text = await streamProvider('anthropic', 'chat', body, { signal, onToken })
+    if (!text.trim()) throw new Error('Empty response from Anthropic.')
+    return text.trim()
+  }
+  const json = await callProvider('anthropic', 'chat', body, { signal })
   const text = Array.isArray(json.content) ? json.content.map((b) => b.text || '').join('').trim() : ''
   if (!text) throw new Error('Empty response from Anthropic.')
   return text
@@ -474,7 +494,7 @@ function mockAnswer(question, deck, results = null) {
 // context. When the deck has a retrieval index (built from an uploaded PDF), the
 // shared RAG layer selects the most relevant document passages and grounds the
 // answer in them — otherwise it falls back to the deck's flashcards as before.
-export async function answerAssistant({ question, deck, history = [], settings, user, coach, signal }) {
+export async function answerAssistant({ question, deck, history = [], settings, user, coach, signal, onToken }) {
   const q = String(question || '').trim()
   if (!q) throw new Error('Ask a question to get started.')
   const provider = settings?.provider || 'demo'
@@ -511,19 +531,26 @@ export async function answerAssistant({ question, deck, history = [], settings, 
   const system = `${buildAssistantSystem(deck, !!retrieved, !!coach)}\n\n${coachBlock}${sourceBlock}FLASHCARDS:\n${deckContext(deck)}`
 
   if (provider === 'openai') {
-    return openaiChat(system, msgs, signal)
+    return openaiChat(system, msgs, { signal, onToken })
   }
   if (provider === 'anthropic') {
     // Anthropic requires the first message to be from the user.
     const trimmed = [...msgs]
     while (trimmed.length && trimmed[0].role !== 'user') trimmed.shift()
-    return anthropicChat(system, trimmed, signal)
+    return anthropicChat(system, trimmed, { signal, onToken })
   }
 
   // Demo mode — offline. Coaching questions are answered from the progress
   // briefing; questions that call for a visual get a generated diagram / table;
-  // everything else falls back to retrieved passages / flashcards.
-  await delay(600, signal)
+  // everything else falls back to retrieved passages / flashcards. The finished
+  // answer is then revealed incrementally so Demo streams like a live provider.
+  await delay(300, signal)
+  const answer = demoAnswer(q, deck, coach, retrieved)
+  return streamOut(answer, onToken, signal)
+}
+
+// Compose the full Demo-mode answer (offline). Split out so it can be streamed.
+function demoAnswer(q, deck, coach, retrieved) {
   if (coach && isCoachingQuestion(q)) return coachReply(q, coach)
   // Visuals are built from targeted passages only; the document-lead overview is
   // fed to the text mock so Demo mode still "reads the PDF" when retrieval misses.

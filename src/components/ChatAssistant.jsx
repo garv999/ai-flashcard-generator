@@ -70,7 +70,8 @@ export default function ChatAssistant({
 }) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
-  const [typing, setTyping] = useState(false)
+  const [typing, setTyping] = useState(false) // animated dots (until first token)
+  const [busy, setBusy] = useState(false) // a request is in flight (blocks re-entry)
   const [error, setError] = useState('')
   const listRef = useRef(null)
   const inputRef = useRef(null)
@@ -93,6 +94,7 @@ export default function ChatAssistant({
   useEffect(() => {
     if (!open || !deckId) return
     setTyping(false)
+    setBusy(false)
     setError('')
     let unsub = () => {}
     if (user) {
@@ -149,7 +151,7 @@ export default function ChatAssistant({
   const send = useCallback(
     async (preset) => {
       const text = (preset ?? input).trim()
-      if (!text || typing) return
+      if (!text || busy) return
       const prior = messages
       const userMsg = makeMessage('user', text)
       const base = [...prior, userMsg]
@@ -165,6 +167,24 @@ export default function ChatAssistant({
       abortRef.current = controller
       const { signal } = controller
 
+      // The assistant reply streams into this placeholder bubble token by token.
+      const placeholder = makeMessage('assistant', '')
+      const replyId = placeholder.id
+      let acc = ''
+      let started = false
+      const onToken = (delta) => {
+        if (signal.aborted) return
+        acc += delta
+        if (!started) {
+          started = true
+          setTyping(false) // swap the dots for the live bubble on first token
+          setMessages((cur) => [...cur, { ...placeholder, text: acc, streaming: true }])
+        } else {
+          setMessages((cur) => cur.map((m) => (m.id === replyId ? { ...m, text: acc } : m)))
+        }
+      }
+
+      setBusy(true)
       setTyping(true)
       try {
         const reply = await answerAssistant({
@@ -175,25 +195,33 @@ export default function ChatAssistant({
           user,
           coach: briefing,
           signal,
+          onToken,
         })
         if (signal.aborted) return // superseded — drop the result, don't persist
-        const assistantMsg = makeMessage('assistant', reply)
-        const next = [...base, assistantMsg]
-        setMessages(next)
-        persist(next, [assistantMsg])
+        const finalMsg = { ...placeholder, text: reply, streaming: false }
+        setMessages((cur) =>
+          cur.some((m) => m.id === replyId)
+            ? cur.map((m) => (m.id === replyId ? finalMsg : m))
+            : [...cur, finalMsg],
+        )
+        persist([...base, finalMsg], [finalMsg])
       } catch (e) {
-        if (signal.aborted || e?.name === 'AbortError') return // cancelled — stay silent
+        // Drop the partial bubble; on a genuine error surface it, on a cancel
+        // stay silent.
+        setMessages((cur) => cur.filter((m) => m.id !== replyId))
+        if (signal.aborted || e?.name === 'AbortError') return
         setError(e?.message || 'Something went wrong. Please try again.')
       } finally {
-        // Only clear the typing indicator if this request is still the current
-        // one (a newer send or a deck switch may have taken over).
+        // Only clear busy/typing if this request is still the current one (a
+        // newer send or a deck switch may have taken over).
         if (abortRef.current === controller) {
           abortRef.current = null
+          setBusy(false)
           setTyping(false)
         }
       }
     },
-    [input, typing, messages, deck, settings, user, briefing, persist],
+    [input, busy, messages, deck, settings, user, briefing, persist],
   )
 
   // Act on a recommendation card: jump to the recommended deck + study mode and
@@ -310,7 +338,7 @@ export default function ChatAssistant({
                     type="button"
                     className="chat-chip"
                     onClick={() => send(a.prompt)}
-                    disabled={typing}
+                    disabled={busy}
                   >
                     {a.label}
                   </button>
@@ -322,7 +350,19 @@ export default function ChatAssistant({
           {messages.map((m) => (
             <div key={m.id} className={`chat-msg chat-msg-${m.role}`}>
               <div className="chat-bubble">
-                {m.role === 'assistant' ? <MessageContent text={m.text} /> : m.text}
+                {m.role !== 'assistant' ? (
+                  m.text
+                ) : m.streaming ? (
+                  // While streaming, render raw partial text (a half-formed
+                  // ```mermaid block or table would fail to parse); the finished
+                  // message re-renders through MessageContent below.
+                  <>
+                    {m.text}
+                    <span className="chat-caret" aria-hidden="true" />
+                  </>
+                ) : (
+                  <MessageContent text={m.text} />
+                )}
               </div>
             </div>
           ))}
@@ -346,7 +386,7 @@ export default function ChatAssistant({
                 type="button"
                 className="chat-chip"
                 onClick={() => send(a.prompt)}
-                disabled={typing}
+                disabled={busy}
               >
                 {a.label}
               </button>
@@ -391,7 +431,7 @@ export default function ChatAssistant({
           <button
             type="submit"
             className="chat-send"
-            disabled={!input.trim() || typing}
+            disabled={!input.trim() || busy}
             aria-label="Send message"
           >
             <SendIcon />

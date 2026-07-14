@@ -96,10 +96,62 @@ export default async function handler(req, res) {
     })
   }
 
+  const headers = { 'Content-Type': 'application/json', ...authHeaders(provider, key) }
+
+  // Streaming path: the client asked for token-by-token output (stream: true).
+  // Forward the provider's Server-Sent Events straight through to the browser.
+  if (body.stream) {
+    // Cancel the upstream request if the browser disconnects mid-stream.
+    const ac = new AbortController()
+    let finished = false
+    res.on('close', () => {
+      if (!finished) ac.abort()
+    })
+
+    let upstream
+    try {
+      upstream = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body), signal: ac.signal })
+    } catch (e) {
+      finished = true
+      return res.status(502).json({ error: `Upstream request failed: ${e?.message || e}` })
+    }
+
+    // A pre-stream failure (bad key, rate limit, …) comes back as JSON, not SSE —
+    // pass it through so the client can surface a real error.
+    if (!upstream.ok || !upstream.body) {
+      const text = await upstream.text().catch(() => '')
+      finished = true
+      res.status(upstream.status || 502)
+      res.setHeader('Content-Type', upstream.headers.get('content-type') || 'application/json')
+      return res.send(text || JSON.stringify({ error: 'Upstream error.' }))
+    }
+
+    res.status(200)
+    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8')
+    res.setHeader('Cache-Control', 'no-cache, no-transform')
+    res.setHeader('Connection', 'keep-alive')
+    if (typeof res.flushHeaders === 'function') res.flushHeaders()
+
+    const reader = upstream.body.getReader()
+    try {
+      for (;;) {
+        const { done, value } = await reader.read()
+        if (done) break
+        res.write(Buffer.from(value))
+      }
+    } catch {
+      // Client disconnect or upstream cut the stream — just stop writing.
+    } finally {
+      finished = true
+      res.end()
+    }
+    return
+  }
+
   try {
     const upstream = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...authHeaders(provider, key) },
+      headers,
       body: JSON.stringify(body),
     })
     const text = await upstream.text()
