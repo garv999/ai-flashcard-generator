@@ -84,8 +84,8 @@ export function resolveEmbedder(settings) {
   return { provider: 'local', model: 'hash-v1', dim: LOCAL_DIM, needsKey: false }
 }
 
-async function openaiEmbedBatch(inputs) {
-  const json = await callProvider('openai', 'embeddings', { model: OPENAI_MODEL, input: inputs })
+async function openaiEmbedBatch(inputs, signal) {
+  const json = await callProvider('openai', 'embeddings', { model: OPENAI_MODEL, input: inputs }, { signal })
   // Keep provider order stable, then normalise so cosine == dot product.
   return (json.data || [])
     .sort((a, b) => a.index - b.index)
@@ -94,7 +94,7 @@ async function openaiEmbedBatch(inputs) {
 
 // Embed many texts with a resolved embedder. Returns number[][] (parallel to
 // `texts`). onProgress({ current, total }) reports batch progress.
-export async function embedTexts(texts, embedder, settings, { onProgress } = {}) {
+export async function embedTexts(texts, embedder, settings, { onProgress, signal } = {}) {
   const list = texts || []
   if (!list.length) return []
 
@@ -103,7 +103,7 @@ export async function embedTexts(texts, embedder, settings, { onProgress } = {})
     const batches = Math.ceil(list.length / OPENAI_BATCH)
     for (let b = 0; b < batches; b++) {
       const slice = list.slice(b * OPENAI_BATCH, (b + 1) * OPENAI_BATCH)
-      const vecs = await openaiEmbedBatch(slice)
+      const vecs = await openaiEmbedBatch(slice, signal)
       out.push(...vecs)
       if (onProgress) onProgress({ current: Math.min((b + 1) * OPENAI_BATCH, list.length), total: list.length })
     }
@@ -117,7 +117,7 @@ export async function embedTexts(texts, embedder, settings, { onProgress } = {})
 }
 
 // Embed a single query with the SAME embedder the index was built with.
-export async function embedQuery(text, embedder, settings) {
-  const [vec] = await embedTexts([text], embedder, settings)
+export async function embedQuery(text, embedder, settings, { signal } = {}) {
+  const [vec] = await embedTexts([text], embedder, settings, { signal })
   return vec
 }

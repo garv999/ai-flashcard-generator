@@ -151,9 +151,33 @@ function mockGenerateFromContent(content, count) {
   return cards
 }
 
-// Simulate network latency so the demo loading state is visible.
-function delay(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms))
+// An AbortError-shaped error so callers can detect a cancelled request the same
+// way `fetch` reports one.
+function abortError() {
+  const e = new Error('Request cancelled.')
+  e.name = 'AbortError'
+  return e
+}
+
+function throwIfAborted(signal) {
+  if (signal?.aborted) throw abortError()
+}
+
+// Simulate network latency so the demo loading state is visible. Rejects early
+// if `signal` aborts, so Demo-mode answers cancel like real requests do.
+function delay(ms, signal) {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) return reject(abortError())
+    const t = setTimeout(resolve, ms)
+    signal?.addEventListener(
+      'abort',
+      () => {
+        clearTimeout(t)
+        reject(abortError())
+      },
+      { once: true },
+    )
+  })
 }
 
 // ---------------------------------------------------------------------------
@@ -276,26 +300,36 @@ function deckContext(deck, max = MAX_CONTEXT_CARDS) {
   return cards.map((c, i) => `${i + 1}. Q: ${c.question}\n   A: ${c.answer}`).join('\n')
 }
 
-async function openaiChat(system, msgs) {
-  const json = await callProvider('openai', 'chat', {
-    model: 'gpt-4o-mini',
-    temperature: 0.5,
-    max_tokens: 700,
-    messages: [{ role: 'system', content: system }, ...msgs],
-  })
+async function openaiChat(system, msgs, signal) {
+  const json = await callProvider(
+    'openai',
+    'chat',
+    {
+      model: 'gpt-4o-mini',
+      temperature: 0.5,
+      max_tokens: 700,
+      messages: [{ role: 'system', content: system }, ...msgs],
+    },
+    { signal },
+  )
   const text = json.choices?.[0]?.message?.content?.trim()
   if (!text) throw new Error('Empty response from OpenAI.')
   return text
 }
 
-async function anthropicChat(system, msgs) {
-  const json = await callProvider('anthropic', 'chat', {
-    model: 'claude-sonnet-5',
-    max_tokens: 800,
-    temperature: 0.5,
-    system,
-    messages: msgs,
-  })
+async function anthropicChat(system, msgs, signal) {
+  const json = await callProvider(
+    'anthropic',
+    'chat',
+    {
+      model: 'claude-sonnet-5',
+      max_tokens: 800,
+      temperature: 0.5,
+      system,
+      messages: msgs,
+    },
+    { signal },
+  )
   const text = Array.isArray(json.content) ? json.content.map((b) => b.text || '').join('').trim() : ''
   if (!text) throw new Error('Empty response from Anthropic.')
   return text
@@ -440,7 +474,7 @@ function mockAnswer(question, deck, results = null) {
 // context. When the deck has a retrieval index (built from an uploaded PDF), the
 // shared RAG layer selects the most relevant document passages and grounds the
 // answer in them — otherwise it falls back to the deck's flashcards as before.
-export async function answerAssistant({ question, deck, history = [], settings, user, coach }) {
+export async function answerAssistant({ question, deck, history = [], settings, user, coach, signal }) {
   const q = String(question || '').trim()
   if (!q) throw new Error('Ask a question to get started.')
   const provider = settings?.provider || 'demo'
@@ -451,7 +485,8 @@ export async function answerAssistant({ question, deck, history = [], settings, 
   //    index (topic decks) or retrieval isn't possible, in which case the
   //    assistant falls back to the flashcards exactly as before.
   const retrievalQuery = buildRetrievalQuery(q, history)
-  const retrieved = await retrieveForDeck({ deck, user, query: retrievalQuery, settings, topK: 5 })
+  const retrieved = await retrieveForDeck({ deck, user, query: retrievalQuery, settings, topK: 5, signal })
+  throwIfAborted(signal) // don't fire the (costly) answer request after cancel
 
   // 2. Map prior turns to provider roles for conversation history / follow-ups,
   //    bounded for token safety.
@@ -476,19 +511,19 @@ export async function answerAssistant({ question, deck, history = [], settings, 
   const system = `${buildAssistantSystem(deck, !!retrieved, !!coach)}\n\n${coachBlock}${sourceBlock}FLASHCARDS:\n${deckContext(deck)}`
 
   if (provider === 'openai') {
-    return openaiChat(system, msgs)
+    return openaiChat(system, msgs, signal)
   }
   if (provider === 'anthropic') {
     // Anthropic requires the first message to be from the user.
     const trimmed = [...msgs]
     while (trimmed.length && trimmed[0].role !== 'user') trimmed.shift()
-    return anthropicChat(system, trimmed)
+    return anthropicChat(system, trimmed, signal)
   }
 
   // Demo mode — offline. Coaching questions are answered from the progress
   // briefing; questions that call for a visual get a generated diagram / table;
   // everything else falls back to retrieved passages / flashcards.
-  await delay(600)
+  await delay(600, signal)
   if (coach && isCoachingQuestion(q)) return coachReply(q, coach)
   // Visuals are built from targeted passages only; the document-lead overview is
   // fed to the text mock so Demo mode still "reads the PDF" when retrieval misses.

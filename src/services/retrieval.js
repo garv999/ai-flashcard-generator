@@ -140,9 +140,9 @@ export function search(index, queryVector, topK = DEFAULT_TOP_K) {
 
 // Embed a query with the index's OWN embedder and search. Throws if the query
 // can't be embedded (e.g. an OpenAI index but no key available now).
-export async function retrieve(index, queryText, settings, { topK = DEFAULT_TOP_K } = {}) {
+export async function retrieve(index, queryText, settings, { topK = DEFAULT_TOP_K, signal } = {}) {
   if (!index || !queryText) return []
-  const qvec = await embedQuery(queryText, index.embedder, settings)
+  const qvec = await embedQuery(queryText, index.embedder, settings, { signal })
   return search(index, qvec, topK)
 }
 
@@ -265,7 +265,7 @@ export async function createAndSaveIndex({ deckId, text, settings, user, onProgr
 //
 // Result shape: { results, text, mode } where mode is 'passages' (targeted) or
 // 'overview' (document lead; results is []).
-export async function retrieveForDeck({ deck, deckId, user, query, settings, topK = DEFAULT_TOP_K }) {
+export async function retrieveForDeck({ deck, deckId, user, query, settings, topK = DEFAULT_TOP_K, signal }) {
   const id = deckId || deck?.id
   if (!id) return null
   try {
@@ -275,7 +275,7 @@ export async function retrieveForDeck({ deck, deckId, user, query, settings, top
     // Targeted semantic retrieval first — the best, most focused context.
     if (query) {
       try {
-        const results = await retrieve(index, query, settings, { topK })
+        const results = await retrieve(index, query, settings, { topK, signal })
         if (results.length) return { results, text: formatContext(results), mode: 'passages' }
       } catch (e) {
         // Query couldn't be embedded (e.g. an OpenAI-embedded index with no key

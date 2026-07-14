@@ -74,6 +74,9 @@ export default function ChatAssistant({
   const [error, setError] = useState('')
   const listRef = useRef(null)
   const inputRef = useRef(null)
+  // Tracks the in-flight answer request so it can be cancelled when the drawer
+  // closes or the active deck changes.
+  const abortRef = useRef(null)
 
   const deckId = deck?.id
   const provider = settings?.provider || 'demo'
@@ -91,11 +94,19 @@ export default function ChatAssistant({
     if (!open || !deckId) return
     setTyping(false)
     setError('')
+    let unsub = () => {}
     if (user) {
-      const unsub = subscribeToChat(user.uid, deckId, setMessages)
-      return () => unsub()
+      unsub = subscribeToChat(user.uid, deckId, setMessages)
+    } else {
+      setMessages(loadLocalChat(deckId))
     }
-    setMessages(loadLocalChat(deckId))
+    return () => {
+      unsub()
+      // Cancel any in-flight answer for the deck / panel we're leaving so its
+      // result can't land against a superseded deck.
+      abortRef.current?.abort()
+      abortRef.current = null
+    }
   }, [open, deckId, user])
 
   // Persist the conversation for the active mode. Signed in, we append only the
@@ -146,6 +157,14 @@ export default function ChatAssistant({
       setInput('')
       setError('')
       persist(base, [userMsg])
+
+      // Supersede any previous in-flight answer, and track this one so closing
+      // the drawer or switching decks can cancel it.
+      abortRef.current?.abort()
+      const controller = new AbortController()
+      abortRef.current = controller
+      const { signal } = controller
+
       setTyping(true)
       try {
         const reply = await answerAssistant({
@@ -155,15 +174,23 @@ export default function ChatAssistant({
           settings,
           user,
           coach: briefing,
+          signal,
         })
+        if (signal.aborted) return // superseded — drop the result, don't persist
         const assistantMsg = makeMessage('assistant', reply)
         const next = [...base, assistantMsg]
         setMessages(next)
         persist(next, [assistantMsg])
       } catch (e) {
+        if (signal.aborted || e?.name === 'AbortError') return // cancelled — stay silent
         setError(e?.message || 'Something went wrong. Please try again.')
       } finally {
-        setTyping(false)
+        // Only clear the typing indicator if this request is still the current
+        // one (a newer send or a deck switch may have taken over).
+        if (abortRef.current === controller) {
+          abortRef.current = null
+          setTyping(false)
+        }
       }
     },
     [input, typing, messages, deck, settings, user, briefing, persist],
