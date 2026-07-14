@@ -17,7 +17,7 @@ import {
   loadLocalChat,
   saveLocalChat,
   subscribeToChat,
-  saveChat,
+  appendChatMessages,
 } from '../services/chat.js'
 import { answerAssistant } from '../services/aiService.js'
 import { buildCoachBriefing } from '../services/coach.js'
@@ -98,16 +98,19 @@ export default function ChatAssistant({
     setMessages(loadLocalChat(deckId))
   }, [open, deckId, user])
 
-  // Persist the conversation for the active mode.
+  // Persist the conversation for the active mode. Signed in, we append only the
+  // newly added messages (each is its own small Firestore doc, so a long chat
+  // never approaches the 1 MB per-document limit). In Demo mode we rewrite the
+  // full array into localStorage.
   const persist = useCallback(
-    (msgs) => {
+    (fullMsgs, newMsgs) => {
       if (!deckId) return
       if (user) {
-        saveChat(user.uid, deckId, msgs).catch((e) =>
+        appendChatMessages(user.uid, deckId, newMsgs).catch((e) =>
           console.error('[Flashcards] Failed to save chat:', e),
         )
       } else {
-        saveLocalChat(deckId, msgs)
+        saveLocalChat(deckId, fullMsgs)
       }
     },
     [deckId, user],
@@ -137,11 +140,12 @@ export default function ChatAssistant({
       const text = (preset ?? input).trim()
       if (!text || typing) return
       const prior = messages
-      const base = [...prior, makeMessage('user', text)]
+      const userMsg = makeMessage('user', text)
+      const base = [...prior, userMsg]
       setMessages(base)
       setInput('')
       setError('')
-      persist(base)
+      persist(base, [userMsg])
       setTyping(true)
       try {
         const reply = await answerAssistant({
@@ -152,9 +156,10 @@ export default function ChatAssistant({
           user,
           coach: briefing,
         })
-        const next = [...base, makeMessage('assistant', reply)]
+        const assistantMsg = makeMessage('assistant', reply)
+        const next = [...base, assistantMsg]
         setMessages(next)
-        persist(next)
+        persist(next, [assistantMsg])
       } catch (e) {
         setError(e?.message || 'Something went wrong. Please try again.')
       } finally {
