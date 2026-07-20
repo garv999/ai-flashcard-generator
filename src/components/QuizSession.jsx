@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
-import { buildQuiz, canQuiz } from '../services/quiz.js'
+import { buildQuiz, canQuiz, needsAiDistractors } from '../services/quiz.js'
+import { generateQuizDistractors } from '../services/aiService.js'
 import {
   SparklesIcon,
   CheckIcon,
@@ -37,11 +38,57 @@ function ScoreRing({ pct }) {
 // A multiple-choice quiz over one deck. Questions are generated from the deck's
 // cards (correct answer + up to three distractors from other cards). Best score
 // and last attempt persist onto the deck via onSaveResult.
-export default function QuizSession({ set, onSaveResult, onExit }) {
+//
+// On a SMALL deck the card-based distractor pool can't fill four options, so we
+// first ask the AI service for plausible wrong answers written against each
+// card. That's best-effort: Demo mode, no key, an error or an unparseable reply
+// all fall through to the card-based pool unchanged. The service caches per
+// deck, so restarting or retrying a quiz doesn't re-request.
+export default function QuizSession({ set, onSaveResult, onExit, settings }) {
+  const provider = settings?.provider || 'demo'
+  const wantsAi = useMemo(
+    () => needsAiDistractors(set) && (provider === 'openai' || provider === 'anthropic'),
+    [set, provider],
+  )
+  const [aiDistractors, setAiDistractors] = useState(null)
+  // Only the very first build waits — afterwards the result (or the decision to
+  // go without) is in hand, so restart / retry-incorrect rebuild instantly.
+  const [enriching, setEnriching] = useState(wantsAi)
+
+  useEffect(() => {
+    if (!wantsAi) {
+      setAiDistractors(null)
+      setEnriching(false)
+      return
+    }
+    let cancelled = false
+    const ac = new AbortController()
+    setEnriching(true)
+    generateQuizDistractors({ deck: set, settings, signal: ac.signal })
+      .then((map) => {
+        if (!cancelled) setAiDistractors(map)
+      })
+      .catch(() => {
+        // Any failure (including an abort) just means card-based distractors.
+      })
+      .finally(() => {
+        if (!cancelled) setEnriching(false)
+      })
+    return () => {
+      cancelled = true
+      ac.abort()
+    }
+    // A settings change re-runs this, but the service caches per deck+provider,
+    // so an unrelated setting edit costs nothing.
+  }, [wantsAi, set, provider, settings])
+
   // attemptCfg drives (re)generation: `indices` narrows to a card subset (retry
   // incorrect); bumping `n` forces a fresh shuffle for a full restart.
   const [attemptCfg, setAttemptCfg] = useState({ indices: null, n: 0 })
-  const questions = useMemo(() => buildQuiz(set, attemptCfg.indices), [set, attemptCfg])
+  const questions = useMemo(
+    () => buildQuiz(set, attemptCfg.indices, aiDistractors),
+    [set, attemptCfg, aiDistractors],
+  )
 
   const [pos, setPos] = useState(0)
   const [selected, setSelected] = useState(null) // option index the user picked
@@ -134,6 +181,23 @@ export default function QuizSession({ set, onSaveResult, onExit }) {
         </div>
         <h3>Not enough cards to quiz yet</h3>
         <p>Quiz mode needs at least two cards with distinct answers. Add a few more and come back.</p>
+        <button type="button" className="btn-ghost review-back" onClick={onExit}>
+          <ChevronLeftIcon />
+          Back to browsing
+        </button>
+      </div>
+    )
+  }
+
+  // ---- Waiting on AI distractors (first build on a small deck only) --------
+  if (enriching) {
+    return (
+      <div className="quiz-enriching" aria-live="polite">
+        <div className="spinner" aria-hidden="true" />
+        <h3>Writing better answer choices…</h3>
+        <p className="loading-label">
+          This deck is small, so we&rsquo;re generating plausible alternatives for each question.
+        </p>
         <button type="button" className="btn-ghost review-back" onClick={onExit}>
           <ChevronLeftIcon />
           Back to browsing

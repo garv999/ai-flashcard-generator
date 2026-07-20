@@ -149,6 +149,7 @@ export default function StudyView({
         <QuizSession
           key={set.id}
           set={set}
+          settings={settings}
           onSaveResult={onSaveQuizResult}
           onExit={() => setMode('browse')}
         />
