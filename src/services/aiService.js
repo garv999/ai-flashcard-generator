@@ -564,6 +564,132 @@ function demoAnswer(q, deck, coach, retrieved) {
   return mockAnswer(q, deck, demoResults)
 }
 
+// ---------------------------------------------------------------------------
+// Quiz distractors (optional AI enrichment)
+//
+// Quiz mode normally draws wrong answers from OTHER cards in the deck. On a
+// small deck that pool is thin, so the choices are few and often obviously
+// wrong. generateQuizDistractors() asks the provider for plausible-but-wrong
+// answers written against each specific card; quiz.js tops up anything missing
+// from the card-based pool, so this is purely additive.
+//
+// Everything here is best-effort: Demo mode (no key), a provider error, an
+// unparseable reply or an abort all resolve to null and the quiz builds exactly
+// as it did before. Results are cached per deck content, so restarting or
+// retrying a quiz never re-requests.
+// ---------------------------------------------------------------------------
+const DISTRACTORS_PER_CARD = 3
+const MAX_DISTRACTOR_CARDS = 20 // bound the request; small decks are far under this
+
+// deck fingerprint -> Promise<{ [cardIndex]: string[] } | null>. The in-flight
+// promise is cached (not just the result) so a re-render mid-request reuses it
+// instead of firing a second one.
+const distractorCache = new Map()
+
+// djb2 — a cheap content hash so edited cards invalidate the cache naturally.
+function hashString(str) {
+  let h = 5381
+  for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) | 0
+  return (h >>> 0).toString(36)
+}
+
+function distractorCacheKey(deck, provider) {
+  const cards = (deck?.cards || []).slice(0, MAX_DISTRACTOR_CARDS)
+  const body = cards.map((c) => `${c?.question}»${c?.answer}`).join('|')
+  return `${provider}:${deck?.id || 'anon'}:${cards.length}:${hashString(body)}`
+}
+
+const DISTRACTOR_SYSTEM =
+  'You write multiple-choice quiz distractors. For each flashcard you are given, ' +
+  `produce exactly ${DISTRACTORS_PER_CARD} INCORRECT answers that a student might ` +
+  'plausibly choose. Rules: every distractor must be clearly wrong but believable ' +
+  'for the topic; match the correct answer in length, tone and format; never ' +
+  'paraphrase or restate the correct answer; never use "none/all of the above". ' +
+  'Reply with JSON only — an array of {"i": <card index>, "distractors": ["…","…","…"]} ' +
+  'and nothing else.'
+
+function buildDistractorPrompt(deck, cards) {
+  const list = cards
+    .map((c, i) => `${i}. Q: ${c.question}\n   CORRECT: ${c.answer}`)
+    .join('\n')
+  return `Topic: ${deck?.topic || 'general study'}\n\nFlashcards:\n${list}\n\nReturn one entry per card index above.`
+}
+
+// Parse the model's reply into `{ [cardIndex]: string[] }`, dropping anything
+// malformed or accidentally equal to the correct answer.
+function parseDistractors(text, cards) {
+  if (!text) return null
+  const cleaned = String(text).trim().replace(/^```(?:json)?/i, '').replace(/```$/, '').trim()
+  let data
+  try {
+    data = JSON.parse(cleaned)
+  } catch {
+    const match = cleaned.match(/\[[\s\S]*\]/)
+    if (!match) return null
+    try {
+      data = JSON.parse(match[0])
+    } catch {
+      return null
+    }
+  }
+  if (!Array.isArray(data)) return null
+
+  const out = {}
+  for (const entry of data) {
+    const i = Number(entry?.i)
+    const card = cards[i]
+    if (!card || !Array.isArray(entry?.distractors)) continue
+    const correct = String(card.answer ?? '').trim().toLowerCase()
+    const seen = new Set([correct])
+    const list = []
+    for (const raw of entry.distractors) {
+      const s = String(raw ?? '').trim()
+      const key = s.toLowerCase()
+      if (!s || seen.has(key)) continue
+      seen.add(key)
+      list.push(s)
+    }
+    if (list.length) out[i] = list
+  }
+  return Object.keys(out).length ? out : null
+}
+
+// Ask the configured provider for distractors for `deck`. Resolves to
+// `{ [cardIndex]: string[] }`, or null when unavailable for any reason — the
+// caller treats null as "use the card-based pool", i.e. the original behaviour.
+export async function generateQuizDistractors({ deck, settings, signal } = {}) {
+  const provider = settings?.provider || 'demo'
+  const cards = (deck?.cards || []).slice(0, MAX_DISTRACTOR_CARDS)
+  // Demo mode has no provider to ask, so there is nothing to enrich with.
+  if (provider !== 'openai' && provider !== 'anthropic') return null
+  if (!cards.length) return null
+
+  const key = distractorCacheKey(deck, provider)
+  const cached = distractorCache.get(key)
+  if (cached) return cached
+
+  const prompt = buildDistractorPrompt(deck, cards)
+  // Note: no `signal` on the request itself — an abort would otherwise poison
+  // the shared cache entry for every later caller. The component ignores a late
+  // result instead; the request is small and completes on its own.
+  const pending = (async () => {
+    const text =
+      provider === 'openai'
+        ? await openaiChat(DISTRACTOR_SYSTEM, [{ role: 'user', content: prompt }])
+        : await anthropicChat(DISTRACTOR_SYSTEM, [{ role: 'user', content: prompt }])
+    return parseDistractors(text, cards)
+  })().catch(() => {
+    // Failed lookups aren't cached — a later attempt may succeed.
+    distractorCache.delete(key)
+    return null
+  })
+
+  distractorCache.set(key, pending)
+  const result = await pending
+  throwIfAborted(signal)
+  return result
+}
+
 // Generate flashcards from a block of source content (e.g. extracted PDF text).
 // Large content is chunked to stay under token limits, and the cards from every
 // chunk are merged (and de-duplicated) into a single list.

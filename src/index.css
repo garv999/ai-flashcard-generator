@@ -2720,6 +2720,23 @@ input[type='range'] {
 }
 
 /* Results screen */
+/* Shown while AI distractors are generated for a small deck (first build only). */
+.quiz-enriching {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-4);
+  padding: var(--s-8) var(--s-6);
+  text-align: center;
+  animation: rise-in var(--t-med) var(--ease);
+}
+.quiz-enriching h3 {
+  margin: 0;
+}
+.quiz-enriching .loading-label {
+  max-width: 44ch;
+}
+
 .quiz-results {
   display: flex;
   flex-direction: column;
