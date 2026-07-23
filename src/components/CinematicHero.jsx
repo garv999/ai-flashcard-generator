@@ -2,7 +2,14 @@ import { useEffect, useRef } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import Iphone3D from './Iphone3D.jsx'
-import { SparklesIcon, ChevronRightIcon, BrainIcon, TargetIcon, ClockIcon } from './Icons.jsx'
+import {
+  SparklesIcon,
+  ChevronRightIcon,
+  BrainIcon,
+  TargetIcon,
+  ClockIcon,
+  BoltIcon,
+} from './Icons.jsx'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -75,6 +82,26 @@ export default function CinematicHero({ onGetStarted }) {
       <div className="cine-stage">
         <div className="cine-scrim" aria-hidden="true" />
 
+        {/* Landing nav, composed like the reference: glass logo pill on the left,
+            primary action on the right. Marketing links (Features/Pricing/Blog)
+            are intentionally omitted — those pages don't exist in this app and
+            dead links would be a real regression. */}
+        <header className="cine-nav">
+          <span className="cine-nav-brand">
+            <span className="cine-nav-mark">
+              <BoltIcon />
+            </span>
+            <span className="cine-nav-name">
+              AI Flashcard
+              <br />
+              Generator
+            </span>
+          </span>
+          <button type="button" className="cine-nav-cta" onClick={onGetStarted}>
+            Get Started
+          </button>
+        </header>
+
         <div className="cine-overlay">
           <div className="cine-text">
             <p className="cine-eyebrow" data-hero-in>
@@ -89,10 +116,34 @@ export default function CinematicHero({ onGetStarted }) {
               Turn any topic or PDF into a smart flashcard deck with spaced repetition built
               in — so knowledge actually sticks.
             </p>
-            <button type="button" className="cine-cta" onClick={onGetStarted} data-hero-in>
-              <SparklesIcon />
-              Start studying
-            </button>
+            <div className="cine-actions" data-hero-in>
+              <button type="button" className="cine-cta" onClick={onGetStarted}>
+                <SparklesIcon />
+                Create your deck
+              </button>
+              <button type="button" className="cine-cta-ghost" onClick={onGetStarted}>
+                <ChevronRightIcon />
+                Explore features
+              </button>
+            </div>
+
+            {/* Social proof row, composed as in the reference. The avatars are
+                CSS-only and the figures are PLACEHOLDERS — replace them with real
+                numbers (or remove the row) before any public launch. */}
+            <div className="cine-proof" data-hero-in>
+              <span className="cine-proof-avatars" aria-hidden="true">
+                <i />
+                <i />
+                <i />
+                <i />
+              </span>
+              <span className="cine-proof-copy">
+                <strong>Loved by focused learners</strong>
+                <span className="cine-proof-stars" aria-hidden="true">
+                  ★★★★★ <em>4.9/5</em>
+                </span>
+              </span>
+            </div>
           </div>
 
           <div className="cine-visual" data-hero-in aria-hidden="true">
