@@ -23,38 +23,85 @@
      clicks meant for the workspace scrolling underneath. Its own controls
      (CTA, scroll cue) opt back in below. */
   pointer-events: none;
-  /* Soft lavender dawn — warm light at the horizon behind the phone. */
+  /* Cinematic sunrise — a warm sun sitting on a hazy horizon under a lavender
+     sky, with cool blue ambient light spilling in from the upper right. Layers
+     read back-to-front: sun core → horizon bloom → blue ambient → sky/water. */
   background:
-    radial-gradient(58% 62% at 72% 44%, rgba(255, 245, 235, 0.85), transparent 66%),
-    radial-gradient(60% 55% at 24% 86%, rgba(139, 127, 240, 0.22), transparent 72%),
-    radial-gradient(70% 60% at 88% 12%, rgba(160, 190, 250, 0.28), transparent 70%),
-    linear-gradient(165deg, #dcd9f5 0%, #e6e2f7 45%, #efeafb 100%);
+    /* sun core */
+    radial-gradient(26% 15% at 46% 60%, rgba(255, 248, 232, 0.95), rgba(255, 227, 190, 0.5) 40%, transparent 72%),
+    /* golden horizon bloom */
+    radial-gradient(74% 26% at 46% 62%, rgba(250, 213, 176, 0.55), transparent 72%),
+    /* warm peach lift just under the horizon (water catching the light) */
+    radial-gradient(50% 16% at 46% 70%, rgba(248, 219, 198, 0.4), transparent 74%),
+    /* cool blue ambient, upper right */
+    radial-gradient(62% 48% at 88% 8%, rgba(158, 189, 250, 0.38), transparent 72%),
+    /* lavender sky descending into pale water */
+    linear-gradient(
+      180deg,
+      #b7b2e2 0%,
+      #c7c1ea 24%,
+      #dbd4f0 44%,
+      #ece1ea 58%,
+      #e3ddf3 67%,
+      #d6d0ee 100%
+    );
 }
 
-/* Subtle metallic sparkle */
+/* Volumetric cloud bands — soft blurred ellipses at varying scale/opacity to
+   fake depth, drifting very slowly so the sky feels alive but never busy. */
 .cine-stage::before {
   content: '';
   position: absolute;
-  inset: 0;
+  inset: -12% -24%;
   pointer-events: none;
-  background-image:
-    radial-gradient(1.4px 1.4px at 18% 22%, rgba(91, 95, 214, 0.18), transparent),
-    radial-gradient(1.2px 1.2px at 62% 14%, rgba(91, 95, 214, 0.18), transparent),
-    radial-gradient(1.3px 1.3px at 82% 58%, rgba(91, 95, 214, 0.18), transparent),
-    radial-gradient(1px 1px at 34% 68%, rgba(91, 95, 214, 0.18), transparent),
-    radial-gradient(1.5px 1.5px at 48% 40%, rgba(91, 95, 214, 0.18), transparent),
-    radial-gradient(1px 1px at 90% 28%, rgba(91, 95, 214, 0.18), transparent),
-    radial-gradient(1.2px 1.2px at 12% 82%, rgba(91, 95, 214, 0.18), transparent),
-    radial-gradient(1px 1px at 70% 86%, rgba(91, 95, 214, 0.18), transparent);
-  opacity: 0.6;
-  animation: sparkle-twinkle 5s ease-in-out infinite alternate;
+  background:
+    radial-gradient(36% 8% at 20% 26%, rgba(255, 255, 255, 0.55), transparent 72%),
+    radial-gradient(28% 6% at 66% 18%, rgba(255, 255, 255, 0.45), transparent 74%),
+    radial-gradient(44% 7% at 46% 40%, rgba(255, 246, 236, 0.52), transparent 76%),
+    radial-gradient(24% 5% at 86% 34%, rgba(255, 255, 255, 0.4), transparent 74%),
+    radial-gradient(32% 6% at 10% 48%, rgba(255, 244, 234, 0.44), transparent 76%),
+    radial-gradient(38% 5% at 62% 52%, rgba(255, 250, 244, 0.4), transparent 78%);
+  filter: blur(16px);
+  opacity: 0.9;
+  will-change: transform;
+  animation: cloud-drift 96s ease-in-out infinite alternate;
 }
-@keyframes sparkle-twinkle {
-  0% {
-    opacity: 0.35;
+@keyframes cloud-drift {
+  from {
+    transform: translate3d(-2%, 0, 0) scale(1);
   }
-  100% {
-    opacity: 0.7;
+  to {
+    transform: translate3d(3%, -1.2%, 0) scale(1.04);
+  }
+}
+
+/* God rays fanning from the sun. Masked to a soft disc so the beams dissolve
+   long before the edges, and sweeping a couple of degrees over ~40s. */
+.cine-stage::after {
+  content: '';
+  position: absolute;
+  left: 46%;
+  top: 60%;
+  width: 190vmax;
+  height: 190vmax;
+  pointer-events: none;
+  background: repeating-conic-gradient(
+    from 196deg at 50% 50%,
+    rgba(255, 241, 219, 0.17) 0deg 2.4deg,
+    transparent 2.4deg 9.5deg
+  );
+  -webkit-mask-image: radial-gradient(closest-side, rgba(0, 0, 0, 0.95), transparent 58%);
+  mask-image: radial-gradient(closest-side, rgba(0, 0, 0, 0.95), transparent 58%);
+  opacity: 0.55;
+  will-change: transform;
+  animation: ray-sweep 44s ease-in-out infinite alternate;
+}
+@keyframes ray-sweep {
+  from {
+    transform: translate(-50%, -50%) rotate(-2deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(2deg);
   }
 }
 
@@ -69,14 +116,34 @@
   pointer-events: none !important;
 }
 
-/* Legibility scrim — keeps the headline readable regardless of the scene */
+/* Atmosphere + legibility. Layers front-to-back:
+     1. a soft light wash so the ink headline stays crisp over the scene;
+     2. a fog bank sitting on the horizon line;
+     3. hazy distant ridges — deliberately low-contrast and desaturated so they
+        read as far-off ranges dissolving into the haze rather than hard shapes. */
 .cine-scrim {
   position: absolute;
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(72% 82% at 24% 46%, rgba(250, 249, 255, 0.72), transparent 66%),
-    linear-gradient(180deg, rgba(250, 249, 255, 0.3) 0%, transparent 42%, rgba(232, 229, 248, 0.4) 100%);
+    /* legibility wash (kept) */
+    radial-gradient(72% 82% at 24% 46%, rgba(250, 249, 255, 0.68), transparent 66%),
+    /* horizon fog bank */
+    linear-gradient(
+      180deg,
+      transparent 50%,
+      rgba(255, 246, 236, 0.42) 59%,
+      rgba(232, 227, 246, 0.46) 66%,
+      transparent 80%
+    ),
+    /* distant ridges */
+    radial-gradient(24% 6% at 9% 62%, rgba(122, 116, 168, 0.42), transparent 74%),
+    radial-gradient(28% 7.5% at 28% 64%, rgba(112, 106, 162, 0.4), transparent 76%),
+    radial-gradient(22% 5.5% at 46% 63%, rgba(126, 120, 172, 0.32), transparent 76%),
+    radial-gradient(30% 8% at 76% 63.5%, rgba(116, 110, 166, 0.42), transparent 76%),
+    radial-gradient(20% 5.5% at 95% 65%, rgba(130, 124, 176, 0.36), transparent 76%),
+    /* overall vertical grade (kept) */
+    linear-gradient(180deg, rgba(250, 249, 255, 0.28) 0%, transparent 42%, rgba(232, 229, 248, 0.38) 100%);
 }
 
 /* Depth veil — same titanium grey as the stage. Fades in over the hero (text +
@@ -141,8 +208,18 @@
        3. a cooler blue rim of light up and to the right, matching the hero's
           existing studio key light. */
   background:
-    radial-gradient(42% 7% at 50% 86%, rgba(60, 56, 130, 0.2), rgba(60, 56, 130, 0.09) 42%, transparent 74%),
+    /* contact shadow where the device meets the platform */
+    radial-gradient(22% 3.4% at 50% 84.5%, rgba(52, 46, 110, 0.34), transparent 74%),
+    /* reflective circular platform — an ellipse in perspective, glossy centre
+       falling off to nothing at the rim, so it never reads as a plate */
+    radial-gradient(30% 6.2% at 50% 86%, rgba(255, 255, 255, 0.62), rgba(212, 206, 245, 0.34) 52%, transparent 80%),
+    /* platform bloom / soft edge light */
+    radial-gradient(46% 10% at 50% 87%, rgba(158, 148, 226, 0.24), transparent 78%),
+    /* light pooling under the platform, grounding it in the water */
+    radial-gradient(38% 6% at 50% 91%, rgba(255, 240, 222, 0.24), transparent 78%),
+    /* ambient lavender glow behind the device */
     radial-gradient(50% 40% at 50% 46%, rgba(139, 127, 240, 0.26), transparent 70%),
+    /* cool blue rim light, matching the hero key light */
     radial-gradient(40% 32% at 62% 32%, rgba(160, 190, 250, 0.22), transparent 72%);
 }
 
@@ -344,6 +421,11 @@
   }
   .cine-overlay [data-hero-in] {
     opacity: 1;
+    animation: none;
+  }
+  /* The atmosphere stays, but stops moving. */
+  .cine-stage::before,
+  .cine-stage::after {
     animation: none;
   }
 }
