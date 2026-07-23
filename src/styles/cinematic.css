@@ -27,12 +27,17 @@
      sky, with cool blue ambient light spilling in from the upper right. Layers
      read back-to-front: sun core → horizon bloom → blue ambient → sky/water. */
   background:
-    /* sun core */
-    radial-gradient(26% 15% at 46% 60%, rgba(255, 248, 232, 0.95), rgba(255, 227, 190, 0.5) 40%, transparent 72%),
+    /* sun core, sitting right on the horizon line */
+    radial-gradient(15% 9% at 46% 58%, rgba(255, 252, 244, 0.98), rgba(255, 232, 196, 0.62) 42%, transparent 74%),
+    /* sun reflection streaming down the water */
+    radial-gradient(5.5% 19% at 46% 76%, rgba(255, 234, 200, 0.62), transparent 74%),
+    radial-gradient(11% 9% at 46% 66%, rgba(255, 240, 214, 0.45), transparent 76%),
+    /* crisp horizon line where sea meets sky */
+    linear-gradient(180deg, transparent 57.2%, rgba(255, 251, 242, 0.7) 58%, transparent 59.2%),
     /* golden horizon bloom */
-    radial-gradient(74% 26% at 46% 62%, rgba(250, 213, 176, 0.55), transparent 72%),
-    /* warm peach lift just under the horizon (water catching the light) */
-    radial-gradient(50% 16% at 46% 70%, rgba(248, 219, 198, 0.4), transparent 74%),
+    radial-gradient(78% 22% at 46% 59%, rgba(250, 211, 172, 0.6), transparent 74%),
+    /* warm peach lift on the water */
+    radial-gradient(60% 14% at 46% 68%, rgba(248, 219, 198, 0.42), transparent 76%),
     /* cool blue ambient, upper right */
     radial-gradient(62% 48% at 88% 8%, rgba(158, 189, 250, 0.38), transparent 72%),
     /* lavender sky descending into pale water */
@@ -136,14 +141,47 @@
       rgba(232, 227, 246, 0.46) 66%,
       transparent 80%
     ),
-    /* distant ridges */
-    radial-gradient(24% 6% at 9% 62%, rgba(122, 116, 168, 0.42), transparent 74%),
-    radial-gradient(28% 7.5% at 28% 64%, rgba(112, 106, 162, 0.4), transparent 76%),
-    radial-gradient(22% 5.5% at 46% 63%, rgba(126, 120, 172, 0.32), transparent 76%),
-    radial-gradient(30% 8% at 76% 63.5%, rgba(116, 110, 166, 0.42), transparent 76%),
-    radial-gradient(20% 5.5% at 95% 65%, rgba(130, 124, 176, 0.36), transparent 76%),
     /* overall vertical grade (kept) */
     linear-gradient(180deg, rgba(250, 249, 255, 0.28) 0%, transparent 42%, rgba(232, 229, 248, 0.38) 100%);
+}
+
+/* Distant mountain range — real silhouettes, hazed by atmospheric perspective
+   and masked away near the sun so the light burns through the ridgeline. */
+.cine-scrim::before {
+  content: '';
+  position: absolute;
+  left: -2%;
+  right: -2%;
+  bottom: 41%;
+  height: 15%;
+  background: linear-gradient(180deg, rgba(146, 140, 194, 0.6) 0%, rgba(180, 174, 216, 0.34) 100%);
+  clip-path: polygon(
+    0% 100%, 0% 66%, 5% 52%, 11% 70%, 18% 40%, 25% 62%, 32% 34%, 40% 60%,
+    47% 46%, 54% 68%, 61% 42%, 69% 64%, 77% 36%, 85% 60%, 92% 48%, 100% 66%, 100% 100%
+  );
+  -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 20%, rgba(0, 0, 0, 0.18) 40%, rgba(0, 0, 0, 0.14) 52%, #000 74%, #000 100%);
+  mask-image: linear-gradient(90deg, #000 0%, #000 20%, rgba(0, 0, 0, 0.18) 40%, rgba(0, 0, 0, 0.14) 52%, #000 74%, #000 100%);
+  filter: blur(1.6px);
+  opacity: 0.55;
+}
+
+/* Nearer range — darker and lower, giving the scene depth layering. */
+.cine-scrim::after {
+  content: '';
+  position: absolute;
+  left: -3%;
+  right: -3%;
+  bottom: 38.5%;
+  height: 11%;
+  background: linear-gradient(180deg, rgba(112, 106, 164, 0.7) 0%, rgba(146, 140, 194, 0.44) 100%);
+  clip-path: polygon(
+    0% 100%, 0% 72%, 8% 54%, 15% 76%, 23% 46%, 31% 70%, 39% 52%, 47% 74%,
+    56% 48%, 64% 72%, 72% 56%, 80% 76%, 88% 52%, 95% 70%, 100% 60%, 100% 100%
+  );
+  -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 16%, rgba(0, 0, 0, 0.12) 40%, rgba(0, 0, 0, 0.1) 54%, #000 78%, #000 100%);
+  mask-image: linear-gradient(90deg, #000 0%, #000 16%, rgba(0, 0, 0, 0.12) 40%, rgba(0, 0, 0, 0.1) 54%, #000 78%, #000 100%);
+  filter: blur(1.1px);
+  opacity: 0.62;
 }
 
 /* Depth veil — same titanium grey as the stage. Fades in over the hero (text +
@@ -221,6 +259,150 @@
     radial-gradient(50% 40% at 50% 46%, rgba(139, 127, 240, 0.26), transparent 70%),
     /* cool blue rim light, matching the hero key light */
     radial-gradient(40% 32% at 62% 32%, rgba(160, 190, 250, 0.22), transparent 72%);
+}
+
+/* ---- Floating glass stat cards around the device ---------------------- */
+.cine-cards {
+  position: absolute;
+  /* Sit to the RIGHT of the device, overlapping only its outer edge — as in the
+     reference — rather than covering the screen. */
+  right: -27%;
+  top: 9%;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.4vh, 18px);
+  width: clamp(178px, 14vw, 214px);
+  pointer-events: none;
+}
+
+.cine-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: var(--r-lg);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(26px) saturate(1.8);
+  -webkit-backdrop-filter: blur(26px) saturate(1.8);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow:
+    0 18px 40px -18px rgba(60, 56, 130, 0.42),
+    0 6px 14px -8px rgba(60, 56, 130, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  color: var(--text);
+  animation: card-float 7s ease-in-out infinite alternate;
+}
+.cine-card:nth-child(2) {
+  animation-delay: -2.3s;
+  margin-right: 14%;
+}
+.cine-card:nth-child(3) {
+  animation-delay: -4.6s;
+}
+@keyframes card-float {
+  from {
+    transform: translateY(-5px);
+  }
+  to {
+    transform: translateY(5px);
+  }
+}
+
+.cine-card strong {
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.cine-card-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--accent);
+}
+.cine-card-head svg {
+  width: 14px;
+  height: 14px;
+}
+.cine-card-head strong {
+  color: var(--text);
+}
+.cine-card-value {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+.cine-card-meta {
+  font-size: 11px;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+.cine-card-up {
+  color: var(--ok);
+  font-weight: 600;
+}
+
+/* Coach card — avatar + copy, side by side */
+.cine-card-coach {
+  flex-direction: row;
+  align-items: center;
+  gap: 11px;
+}
+.cine-card-avatar {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: var(--grad);
+  color: #fff;
+  box-shadow: var(--shadow-accent);
+}
+.cine-card-avatar svg {
+  width: 19px;
+  height: 19px;
+}
+.cine-card-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.cine-card-copy em {
+  font-style: normal;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--text-muted);
+}
+
+/* Goal progress */
+.cine-card-track {
+  height: 5px;
+  border-radius: var(--r-pill);
+  background: rgba(76, 70, 150, 0.12);
+  overflow: hidden;
+}
+.cine-card-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--grad);
+}
+
+/* Study-time sparkline */
+.cine-card-spark {
+  width: 100%;
+  height: 22px;
+  color: var(--accent);
+  opacity: 0.85;
+}
+
+/* The cards crowd the device on narrow viewports — the phone leads there. */
+@media (max-width: 1180px) {
+  .cine-cards {
+    display: none;
+  }
 }
 
 /* Inner wrapper the scroll hand-off transforms (dock: scale + drift + fade),

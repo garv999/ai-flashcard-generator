@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import Iphone3D from './Iphone3D.jsx'
-import { SparklesIcon, ChevronRightIcon } from './Icons.jsx'
+import { SparklesIcon, ChevronRightIcon, BrainIcon, TargetIcon, ClockIcon } from './Icons.jsx'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -98,6 +98,53 @@ export default function CinematicHero({ onGetStarted }) {
           <div className="cine-visual" data-hero-in aria-hidden="true">
             <div className="cine-phone">
               <Iphone3D progressRef={progressRef} reduced={reduced} />
+            </div>
+
+            {/* Floating glass stat cards, composed as in the design reference.
+                Decorative only (the whole hero is aria-hidden / pointer-events
+                none). Values are PLACEHOLDERS — swap the three spans below for
+                live data when it is available; no logic depends on them. */}
+            <div className="cine-cards">
+              <div className="cine-card cine-card-coach">
+                <span className="cine-card-avatar">
+                  <BrainIcon />
+                </span>
+                <span className="cine-card-copy">
+                  <strong>AI Coach</strong>
+                  <em>Always here to help you learn better.</em>
+                </span>
+              </div>
+
+              <div className="cine-card cine-card-goal">
+                <span className="cine-card-head">
+                  <TargetIcon />
+                  <strong>Today&rsquo;s Goal</strong>
+                </span>
+                <span className="cine-card-value">24 / 50 cards</span>
+                <span className="cine-card-track">
+                  <span className="cine-card-fill" style={{ width: '48%' }} />
+                </span>
+                <span className="cine-card-meta">48%</span>
+              </div>
+
+              <div className="cine-card cine-card-time">
+                <span className="cine-card-head">
+                  <ClockIcon />
+                  <strong>Study Time</strong>
+                </span>
+                <span className="cine-card-value">2h 34m</span>
+                <span className="cine-card-meta cine-card-up">+16% vs yesterday</span>
+                <svg className="cine-card-spark" viewBox="0 0 96 26" preserveAspectRatio="none">
+                  <path
+                    d="M1 19 L13 14 L25 17 L37 8 L49 12 L61 5 L73 9 L95 3"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </div>
             </div>
           </div>
         </div>
