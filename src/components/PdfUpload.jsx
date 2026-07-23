@@ -116,7 +116,7 @@ export default function PdfUpload({ onGenerate, loading }) {
   // ---- Empty state: drop zone -------------------------------------------
   if (!file) {
     return (
-      <section className="pdf-panel" aria-labelledby="pdf-heading" data-reveal="right">
+      <section className="pdf-panel" aria-labelledby="pdf-heading">
         <h2 id="pdf-heading" className="pdf-heading">
           <FileTextIcon className="pdf-heading-icon" />
           Generate from a PDF

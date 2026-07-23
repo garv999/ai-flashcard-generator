@@ -31,7 +31,6 @@ import {
   clearLocalIndexes,
 } from './services/retrieval.js'
 import { useAuth } from './hooks/useAuth.js'
-import useScrollReveal from './hooks/useScrollReveal.js'
 import useBackgroundParallax from './hooks/useBackgroundParallax.js'
 import useSmoothScroll from './hooks/useSmoothScroll.js'
 import {
@@ -66,7 +65,6 @@ function LoadingState({ label = 'Generating your flashcards…' }) {
 
 export default function App() {
   const { user, authReady, logout } = useAuth()
-  useScrollReveal()
   useBackgroundParallax()
   const { scrollTo } = useSmoothScroll()
 
@@ -411,7 +409,7 @@ export default function App() {
           <TopicForm onGenerate={handleGenerate} loading={loading} />
 
           {!user && (
-            <div className="banner demo-hint" role="note" data-reveal="up">
+            <div className="banner demo-hint" role="note">
               <span className="demo-hint-text">
                 <span>
                   <strong>Demo mode.</strong> Decks are saved only in this browser.
@@ -499,7 +497,7 @@ export default function App() {
         />
       )}
 
-      <footer className="footer" data-reveal="up">
+      <footer className="footer">
         {user
           ? `Signed in as ${user.displayName || user.email} · Decks synced to the cloud`
           : 'Demo mode · Flashcards saved locally in your browser'}

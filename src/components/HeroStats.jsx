@@ -43,7 +43,7 @@ export default function HeroStats({ sets }) {
 
   return (
     <section className="hero" aria-label="Your library at a glance">
-      <div className="hero-copy" data-reveal="left">
+      <div className="hero-copy">
         <span className="hero-eyebrow">AI Study Workspace</span>
         <h1 className="hero-title">
           Turn anything into <em>knowledge.</em>
@@ -53,7 +53,7 @@ export default function HeroStats({ sets }) {
         </p>
       </div>
 
-      <div className="hero-stats" role="group" aria-label="Library statistics" data-reveal="right">
+      <div className="hero-stats" role="group" aria-label="Library statistics">
         <Stat value={decks} label="Decks" />
         <Stat value={cards} label="Flashcards" />
         <Stat value={fromPdf} label="From PDFs" />

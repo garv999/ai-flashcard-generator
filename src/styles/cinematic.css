@@ -6,6 +6,10 @@
   /* No z-index: a stacking context here (or on .app) breaks the sticky WebGL
      hero's compositing. The workspace overlaps purely via source paint order. */
   height: 260vh; /* scroll length that scrubs the flight + hand-off */
+  /* Being positioned, this 260vh section paints above the (static) workspace
+     that overlaps its tail — so it would swallow every click aimed at the
+     workspace. The hero is decorative; only its CTA and scroll cue opt back in. */
+  pointer-events: none;
 }
 
 .cine-stage {
@@ -14,11 +18,17 @@
   height: 100vh;
   height: 100svh;
   overflow: hidden;
-  /* Titanium / graphite grey with a soft studio spotlight behind the phone */
+  /* The sticky hero stays pinned above the workspace for its whole 260vh
+     track — long after it has visually faded out. It must never intercept
+     clicks meant for the workspace scrolling underneath. Its own controls
+     (CTA, scroll cue) opt back in below. */
+  pointer-events: none;
+  /* Soft lavender dawn — warm light at the horizon behind the phone. */
   background:
-    radial-gradient(54% 60% at 72% 42%, rgba(196, 200, 208, 0.15), transparent 66%),
-    radial-gradient(50% 55% at 24% 84%, rgba(150, 154, 162, 0.05), transparent 72%),
-    linear-gradient(160deg, #17181b 0%, #121316 55%, #0d0e11 100%);
+    radial-gradient(58% 62% at 72% 44%, rgba(255, 245, 235, 0.85), transparent 66%),
+    radial-gradient(60% 55% at 24% 86%, rgba(139, 127, 240, 0.22), transparent 72%),
+    radial-gradient(70% 60% at 88% 12%, rgba(160, 190, 250, 0.28), transparent 70%),
+    linear-gradient(165deg, #dcd9f5 0%, #e6e2f7 45%, #efeafb 100%);
 }
 
 /* Subtle metallic sparkle */
@@ -28,14 +38,14 @@
   inset: 0;
   pointer-events: none;
   background-image:
-    radial-gradient(1.4px 1.4px at 18% 22%, rgba(255, 255, 255, 0.5), transparent),
-    radial-gradient(1.2px 1.2px at 62% 14%, rgba(255, 255, 255, 0.4), transparent),
-    radial-gradient(1.3px 1.3px at 82% 58%, rgba(255, 255, 255, 0.45), transparent),
-    radial-gradient(1px 1px at 34% 68%, rgba(255, 255, 255, 0.35), transparent),
-    radial-gradient(1.5px 1.5px at 48% 40%, rgba(255, 255, 255, 0.4), transparent),
-    radial-gradient(1px 1px at 90% 28%, rgba(255, 255, 255, 0.3), transparent),
-    radial-gradient(1.2px 1.2px at 12% 82%, rgba(255, 255, 255, 0.35), transparent),
-    radial-gradient(1px 1px at 70% 86%, rgba(255, 255, 255, 0.3), transparent);
+    radial-gradient(1.4px 1.4px at 18% 22%, rgba(91, 95, 214, 0.18), transparent),
+    radial-gradient(1.2px 1.2px at 62% 14%, rgba(91, 95, 214, 0.18), transparent),
+    radial-gradient(1.3px 1.3px at 82% 58%, rgba(91, 95, 214, 0.18), transparent),
+    radial-gradient(1px 1px at 34% 68%, rgba(91, 95, 214, 0.18), transparent),
+    radial-gradient(1.5px 1.5px at 48% 40%, rgba(91, 95, 214, 0.18), transparent),
+    radial-gradient(1px 1px at 90% 28%, rgba(91, 95, 214, 0.18), transparent),
+    radial-gradient(1.2px 1.2px at 12% 82%, rgba(91, 95, 214, 0.18), transparent),
+    radial-gradient(1px 1px at 70% 86%, rgba(91, 95, 214, 0.18), transparent);
   opacity: 0.6;
   animation: sparkle-twinkle 5s ease-in-out infinite alternate;
 }
@@ -48,12 +58,15 @@
   }
 }
 
-/* The 3D phone canvas fills the right column */
+/* The 3D phone canvas fills the right column. Decorative only (aria-hidden),
+   so it stays out of hit-testing — otherwise it swallows clicks aimed at the
+   PDF dropzone once the workspace scrolls up beneath it. */
 .phone3d-canvas {
   width: 100% !important;
   height: 100% !important;
   display: block;
   touch-action: pan-y;
+  pointer-events: none !important;
 }
 
 /* Legibility scrim — keeps the headline readable regardless of the scene */
@@ -62,8 +75,8 @@
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(70% 80% at 26% 46%, rgba(9, 9, 14, 0.55), transparent 66%),
-    linear-gradient(180deg, rgba(9, 9, 14, 0.35) 0%, transparent 40%, rgba(9, 9, 14, 0.45) 100%);
+    radial-gradient(72% 82% at 24% 46%, rgba(250, 249, 255, 0.72), transparent 66%),
+    linear-gradient(180deg, rgba(250, 249, 255, 0.3) 0%, transparent 42%, rgba(232, 229, 248, 0.4) 100%);
 }
 
 /* Depth veil — same titanium grey as the stage. Fades in over the hero (text +
@@ -72,13 +85,16 @@
 .cine-recede {
   position: absolute;
   inset: 0;
-  z-index: 3;
+  /* z-index 2 (not 3): sits at the hero overlay's level so it still veils the
+     phone + copy as they recede, but stays below the rising workspace — on a
+     light theme a veil above the workspace would visibly wash it out. */
+  z-index: 2;
   opacity: 0;
   pointer-events: none;
   will-change: opacity;
   background:
-    radial-gradient(54% 60% at 72% 42%, rgba(196, 200, 208, 0.1), transparent 66%),
-    linear-gradient(160deg, #17181b 0%, #121316 55%, #0d0e11 100%);
+    radial-gradient(58% 62% at 72% 44%, rgba(255, 245, 235, 0.6), transparent 66%),
+    linear-gradient(165deg, #dcd9f5 0%, #e6e2f7 45%, #efeafb 100%);
 }
 
 /* Overlay content — two columns (text + rotating phone) on desktop */
@@ -93,7 +109,16 @@
   width: min(1180px, 100%);
   margin: 0 auto;
   padding: clamp(24px, 6vw, 80px);
-  color: #fff;
+  color: var(--text);
+  /* The hero sits at z-index 2, ABOVE the workspace that scrolls up over it.
+     Its copy and phone canvas are purely decorative, so they must never
+     swallow clicks meant for the workspace underneath (topic input, PDF
+     dropzone, generate button). Only the CTA opts back in. */
+  pointer-events: none;
+}
+
+.cine-cta {
+  pointer-events: auto;
 }
 
 .cine-text {
@@ -107,6 +132,18 @@
   align-self: stretch;
   height: min(86vh, 760px);
   min-width: 0;
+  /* Premium floating presentation for the device — no pedestal, no plate.
+     Painted behind the (transparent) WebGL canvas, so the phone reads as
+     suspended in space:
+       1. a soft ELLIPTICAL contact shadow directly beneath the device, with a
+          long radial falloff so it dissolves into the hero with no edge;
+       2. an ambient lavender glow behind the body, and
+       3. a cooler blue rim of light up and to the right, matching the hero's
+          existing studio key light. */
+  background:
+    radial-gradient(42% 7% at 50% 86%, rgba(60, 56, 130, 0.2), rgba(60, 56, 130, 0.09) 42%, transparent 74%),
+    radial-gradient(50% 40% at 50% 46%, rgba(139, 127, 240, 0.26), transparent 70%),
+    radial-gradient(40% 32% at 62% 32%, rgba(160, 190, 250, 0.22), transparent 72%);
 }
 
 /* Inner wrapper the scroll hand-off transforms (dock: scale + drift + fade),
@@ -155,7 +192,7 @@
   font-weight: 700;
   letter-spacing: 0.28em;
   text-transform: uppercase;
-  color: #a9b4ff;
+  color: var(--accent);
 }
 
 .cine-title {
@@ -164,11 +201,11 @@
   font-weight: 700;
   line-height: 1.03;
   letter-spacing: -0.03em;
-  text-shadow: 0 2px 40px rgba(0, 0, 0, 0.45);
+  text-shadow: 0 1px 24px rgba(255, 255, 255, 0.6);
 }
 .cine-title em {
   font-style: normal;
-  background: linear-gradient(120deg, #a5b4fc 0%, #93c5fd 50%, #67e8f9 100%);
+  background: var(--grad-text);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -179,8 +216,8 @@
   max-width: 480px;
   font-size: clamp(15px, 1.5vw, 18px);
   line-height: 1.6;
-  color: rgba(255, 255, 255, 0.82);
-  text-shadow: 0 1px 20px rgba(0, 0, 0, 0.4);
+  color: var(--text-muted);
+  text-shadow: 0 1px 16px rgba(255, 255, 255, 0.55);
 }
 
 .cine-cta {
@@ -194,8 +231,8 @@
   font-size: 15px;
   font-weight: 600;
   color: #fff;
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 45%, #2563eb 100%);
-  box-shadow: 0 10px 30px rgba(37, 55, 175, 0.5);
+  background: var(--grad);
+  box-shadow: var(--shadow-accent), var(--edge-light);
   transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease,
     filter 0.2s ease;
 }
@@ -206,18 +243,19 @@
 .cine-cta:hover {
   transform: translateY(-2px);
   filter: brightness(1.06);
-  box-shadow: 0 16px 40px rgba(37, 55, 175, 0.6);
+  box-shadow: var(--glow), var(--shadow-accent);
 }
 .cine-cta:active {
   transform: translateY(0);
 }
 .cine-cta:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(10, 12, 34, 1), 0 0 0 6px rgba(147, 165, 255, 0.7);
+  box-shadow: 0 0 0 3px var(--bg), 0 0 0 6px var(--accent-ring);
 }
 
 /* Scroll hint */
 .cine-scroll-hint {
+  pointer-events: auto;
   position: absolute;
   left: 50%;
   bottom: clamp(20px, 4vh, 40px);
@@ -229,7 +267,7 @@
   padding: 6px 10px;
   border: none;
   background: transparent;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-muted);
   font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -241,7 +279,7 @@
   animation: hint-bounce 1.6s ease-in-out infinite;
 }
 .cine-scroll-hint:hover {
-  color: #fff;
+  color: var(--text);
 }
 @keyframes hint-bounce {
   0%,

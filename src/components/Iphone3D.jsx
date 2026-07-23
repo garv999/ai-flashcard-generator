@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState, useEffect, Suspense } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { useGLTF, Environment, Lightformer, ContactShadows } from '@react-three/drei'
+import { useGLTF, Environment, Lightformer } from '@react-three/drei'
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing'
 import * as THREE from 'three'
 
@@ -374,7 +374,9 @@ export default function Iphone3D({ progressRef, reduced = false }) {
 
       <Rig progressRef={progressRef} reduced={reduced} screen={tex} />
 
-      <ContactShadows position={[0, -2, 0]} opacity={0.5} scale={9} blur={3} far={4} color="#000000" />
+      {/* No ContactShadows: it renders a square shadow plane, which read as a flat
+          grey rectangle under the device on the light hero. The phone now floats,
+          with a soft radial shadow + ambient glow supplied by .cine-visual. */}
 
       <Environment resolution={256}>
         <Lightformer intensity={2.6} position={[0, 3, 6]} scale={[9, 9, 1]} color="#ffffff" />
