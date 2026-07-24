@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react'
 import Header from './components/Header.jsx'
 import Ambient from './components/Ambient.jsx'
 import CinematicHero from './components/CinematicHero.jsx'
-import HeroStats from './components/HeroStats.jsx'
 import TopicForm from './components/TopicForm.jsx'
 import PdfUpload from './components/PdfUpload.jsx'
-import Sidebar from './components/Sidebar.jsx'
+import DashboardNav from './components/DashboardNav.jsx'
+import DashboardHome from './components/DashboardHome.jsx'
+import DashboardAside from './components/DashboardAside.jsx'
 import StudyView from './components/StudyView.jsx'
 import SettingsModal from './components/SettingsModal.jsx'
 import AuthModal from './components/AuthModal.jsx'
@@ -398,12 +399,30 @@ export default function App() {
         authBusy={authBusy}
       />
 
-      <HeroStats sets={sets} />
-
       <main className="main">
-        <Sidebar sets={sets} activeId={activeId} onSelect={setActiveId} onDelete={handleDelete} />
+        <DashboardNav
+          user={user}
+          onNavigate={(id) =>
+            document.getElementById(id === 'top' ? 'workspace' : id)?.scrollIntoView({ block: 'start' })
+          }
+          onOpenAnalytics={() => setShowAnalytics(true)}
+          onOpenCoach={openIntelligence}
+          onOpenSettings={() => setShowSettings(true)}
+        />
 
         <div className="content">
+          <DashboardHome
+            sets={sets}
+            stats={stats}
+            activeId={activeId}
+            user={user}
+            onSelect={setActiveId}
+            onDelete={handleDelete}
+            onNewDeck={() => document.getElementById('generate')?.scrollIntoView({ block: 'start' })}
+          />
+
+          <div id="generate" />
+
           <PdfUpload onGenerate={handleGeneratePdf} loading={loading} />
 
           <TopicForm onGenerate={handleGenerate} loading={loading} />
@@ -447,6 +466,8 @@ export default function App() {
             </div>
           )}
 
+          <div id="study" />
+
           {loading ? (
             <LoadingState label={genProgress || undefined} />
           ) : decksLoading ? (
@@ -466,6 +487,8 @@ export default function App() {
             />
           )}
         </div>
+
+        <DashboardAside sets={sets} stats={stats} onOpenCoach={openIntelligence} />
       </main>
 
       {showSettings && (
