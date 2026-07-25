@@ -85,6 +85,7 @@ export default function App() {
   const [stats, setStats] = useState(loadLocalStats) // study analytics (device-local)
   const [cloudWarning, setCloudWarning] = useState(false) // cloud sync degraded
   const [coachNav, setCoachNav] = useState(null) // study-coach navigation request
+  const [query, setQuery] = useState('') // dashboard search (decks / topics / cards)
 
   // Settings stay device-local (they hold the provider + API key).
   useEffect(() => saveSettings(settings), [settings])
@@ -390,8 +391,9 @@ export default function App() {
       <Ambient />
       <Header
         provider={settings.provider}
+        query={query}
+        onSearch={setQuery}
         onOpenSettings={() => setShowSettings(true)}
-        onOpenAnalytics={() => setShowAnalytics(true)}
         onOpenIntelligence={openIntelligence}
         user={user}
         onSignIn={() => setShowAuth(true)}
@@ -416,6 +418,7 @@ export default function App() {
             stats={stats}
             activeId={activeId}
             user={user}
+            query={query}
             onSelect={setActiveId}
             onDelete={handleDelete}
             onNewDeck={() => document.getElementById('generate')?.scrollIntoView({ block: 'start' })}

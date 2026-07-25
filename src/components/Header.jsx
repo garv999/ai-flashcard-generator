@@ -1,9 +1,24 @@
-import { BoltIcon, SettingsIcon, LogInIcon, LogOutIcon, UserIcon, ChartIcon, BrainIcon } from './Icons.jsx'
+import {
+  SettingsIcon,
+  LogInIcon,
+  LogOutIcon,
+  UserIcon,
+  BellIcon,
+  SearchIcon,
+  CloseIcon,
+} from './Icons.jsx'
 
+// Top bar, composed to match the design reference: a real search field on the
+// left, a small cluster of controls on the right (provider/settings, insights,
+// profile). Every control performs a real action — the search genuinely filters,
+// and no dead/decorative buttons are added. Analytics, AI Coach and Settings are
+// ALSO reachable from the sidebar; here we keep the provider status, insights and
+// authentication, which the reference surfaces in the header.
 export default function Header({
   provider,
+  query,
+  onSearch,
   onOpenSettings,
-  onOpenAnalytics,
   onOpenIntelligence,
   user,
   onSignIn,
@@ -13,48 +28,51 @@ export default function Header({
   const isLive = provider !== 'demo'
   const label =
     provider === 'openai' ? 'OpenAI' : provider === 'anthropic' ? 'Claude' : 'Demo mode'
-
   const displayName = user?.displayName || user?.email || 'Account'
 
   return (
     <header className="header">
-      <div className="brand">
-        <div className="brand-mark" aria-hidden="true">
-          <BoltIcon />
-        </div>
-        <div>
-          <h1>AI Flashcard Generator</h1>
-          <p className="tagline">Turn any topic into a study-ready deck in seconds</p>
-        </div>
+      <div className="header-search">
+        <SearchIcon aria-hidden="true" />
+        <input
+          type="search"
+          className="header-search-input"
+          value={query}
+          onChange={(e) => onSearch(e.target.value)}
+          placeholder="Search decks, topics, cards…"
+          aria-label="Search decks, topics and flashcards"
+        />
+        {query && (
+          <button
+            type="button"
+            className="header-search-clear"
+            onClick={() => onSearch('')}
+            aria-label="Clear search"
+          >
+            <CloseIcon />
+          </button>
+        )}
       </div>
 
       <div className="header-actions">
         <button
-          className="icon-btn"
-          onClick={onOpenIntelligence}
-          aria-label="Learning intelligence"
-          title="Learning intelligence"
-        >
-          <BrainIcon />
-        </button>
-
-        <button
-          className="icon-btn"
-          onClick={onOpenAnalytics}
-          aria-label="Study analytics"
-          title="Study analytics"
-        >
-          <ChartIcon />
-        </button>
-
-        <button
           className="settings-btn"
           onClick={onOpenSettings}
           aria-label={`Settings — current provider: ${label}`}
+          title="Settings"
         >
           <span className={`status-dot ${isLive ? 'live' : 'demo'}`} aria-hidden="true" />
           {label}
           <SettingsIcon className="gear" />
+        </button>
+
+        <button
+          className="icon-btn"
+          onClick={onOpenIntelligence}
+          aria-label="Learning insights"
+          title="Learning insights"
+        >
+          <BellIcon />
         </button>
 
         {user ? (

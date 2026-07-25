@@ -54,9 +54,19 @@ function DeckCard({ set, index, isActive, onSelect, onDelete }) {
   )
 }
 
-export default function DashboardHome({ sets, stats, activeId, user, onSelect, onDelete, onNewDeck }) {
+export default function DashboardHome({
+  sets,
+  stats,
+  activeId,
+  user,
+  query = '',
+  onSelect,
+  onDelete,
+  onNewDeck,
+}) {
   const [filter, setFilter] = useState('All')
 
+  // Stats reflect the WHOLE library, not the current search.
   const deckCount = sets.length
   const cardCount = sets.reduce((n, s) => n + (s.cards?.length || 0), 0)
   const due = sets.reduce((n, s) => n + deckDueCount(s, Date.now()), 0)
@@ -64,7 +74,21 @@ export default function DashboardHome({ sets, stats, activeId, user, onSelect, o
   const reviews = stats?.totalReviews ?? 0
 
   const first = (user?.displayName || '').split(' ')[0]
-  const recent = sets.slice(0, 2)
+
+  // Real search: a deck matches when the query appears in its topic OR in any of
+  // its flashcards' question/answer text. Case-insensitive, whitespace-trimmed.
+  const q = query.trim().toLowerCase()
+  const visibleSets = q
+    ? sets.filter(
+        (s) =>
+          s.topic?.toLowerCase().includes(q) ||
+          (s.cards || []).some(
+            (c) => c.question?.toLowerCase().includes(q) || c.answer?.toLowerCase().includes(q),
+          ),
+      )
+    : sets
+
+  const recent = visibleSets.slice(0, 2)
 
   return (
     <>
@@ -158,9 +182,11 @@ export default function DashboardHome({ sets, stats, activeId, user, onSelect, o
 
         {sets.length === 0 ? (
           <p className="dempty">No decks yet — generate one below to get started.</p>
+        ) : visibleSets.length === 0 ? (
+          <p className="dempty">No decks, topics or cards match &ldquo;{query.trim()}&rdquo;.</p>
         ) : (
           <div className="ddeck-grid">
-            {sets.map((set, i) => (
+            {visibleSets.map((set, i) => (
               <DeckCard
                 key={set.id}
                 set={set}
