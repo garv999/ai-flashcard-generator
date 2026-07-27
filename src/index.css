@@ -3208,10 +3208,21 @@ input[type='range'] {
 /* ============================================================
    Quiz mode
    ============================================================ */
+/* The whole quiz sits inside a calm lavender study environment (not the hero):
+   soft ambient light top and bottom over paper, so the white option cards lift
+   cleanly out of it — matching the reference. */
 .quiz {
   display: flex;
   flex-direction: column;
-  gap: var(--s-4);
+  gap: var(--s-5);
+  padding: clamp(var(--s-5), 3vw, var(--s-8));
+  border-radius: var(--r-xl);
+  background:
+    radial-gradient(130% 55% at 50% -8%, rgba(180, 205, 252, 0.22), transparent 60%),
+    radial-gradient(130% 70% at 50% 112%, rgba(139, 127, 240, 0.16), transparent 62%),
+    linear-gradient(180deg, #fcfbff 0%, #f1effb 100%);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.7);
   animation: rise-in var(--t-med) var(--ease);
 }
 
@@ -3223,9 +3234,10 @@ input[type='range'] {
   flex-wrap: wrap;
 }
 .quiz-count {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text);
   font-variant-numeric: tabular-nums;
 }
 .quiz-bar-right {
@@ -3252,47 +3264,60 @@ input[type='range'] {
 }
 
 /* Question prompt card — a solid, calm white reading surface (never glass). */
+/* The question reads as a heading ON the environment (no inner card), per the
+   reference — the option cards are the only raised surfaces. */
 .quiz-card {
   position: relative;
-  padding: var(--s-8);
-  border-radius: var(--r-lg);
-  background: var(--panel);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow-md);
+  padding: var(--s-2) var(--s-2) 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+.quiz-card .card-tag {
+  position: static;
+  display: inline-block;
+  margin-bottom: var(--s-3);
 }
 .quiz-question {
-  margin: var(--s-3) 0 0;
-  font-size: clamp(19px, 2.4vw, 24px);
-  font-weight: 600;
-  line-height: 1.45;
-  letter-spacing: -0.02em;
+  margin: 0;
+  font-size: clamp(20px, 2.6vw, 26px);
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: -0.025em;
+  color: var(--text);
 }
 
-/* Answer choices */
+/* Answer choices — a single full-width column, as in the reference. */
 .quiz-options {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: var(--s-3);
 }
 .quiz-option {
   display: flex;
   align-items: center;
-  gap: var(--s-3);
-  padding: 16px 18px;
+  gap: var(--s-4);
+  padding: 17px 20px;
   text-align: left;
-  border-radius: var(--r-md);
-  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  border: 1.5px solid transparent;
   background: var(--panel);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.7);
   color: var(--text);
-  transition: transform 0.16s var(--ease-spring), border-color var(--t-fast) var(--ease),
-    background var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease),
+  font-size: 14.5px;
+  transition: transform 0.18s var(--ease-spring), border-color var(--t-fast) var(--ease),
+    background var(--t-fast) var(--ease), box-shadow var(--t-med) var(--ease),
     opacity var(--t-fast) var(--ease);
 }
 .quiz-option:not(:disabled):hover {
   transform: translateY(-2px);
   border-color: var(--accent-ring);
-  box-shadow: var(--shadow-md), 0 8px 22px -12px var(--accent);
+  box-shadow: var(--shadow-lg), 0 10px 28px -14px var(--accent);
+}
+.quiz-option:not(:disabled):hover .quiz-option-key {
+  background: var(--accent-soft);
+  border-color: var(--accent-ring);
+  color: var(--accent);
 }
 .quiz-option:not(:disabled):active {
   transform: translateY(0);
@@ -3303,20 +3328,22 @@ input[type='range'] {
 .quiz-option-key {
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   flex-shrink: 0;
   border-radius: 50%;
   background: var(--inset);
   border: 1px solid var(--border);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--text-muted);
+  transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease),
+    color var(--t-fast) var(--ease);
 }
 .quiz-option-text {
   flex: 1;
   min-width: 0;
-  font-size: 14px;
+  font-size: 14.5px;
   font-weight: 500;
   line-height: 1.45;
 }
