@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import Iphone3D from './Iphone3D.jsx'
+import ErrorBoundary from './ErrorBoundary.jsx'
 import {
   SparklesIcon,
   ChevronRightIcon,
@@ -148,7 +149,12 @@ export default function CinematicHero({ onGetStarted }) {
 
           <div className="cine-visual" data-hero-in aria-hidden="true">
             <div className="cine-phone">
-              <Iphone3D progressRef={progressRef} reduced={reduced} />
+              {/* If WebGL can't initialise (blocked/unsupported GPU) the 3D scene
+                  throws. Scope it so only the phone drops out — the headline, CTA
+                  and the rest of the app keep working. */}
+              <ErrorBoundary fallback={null}>
+                <Iphone3D progressRef={progressRef} reduced={reduced} />
+              </ErrorBoundary>
             </div>
 
             {/* Floating glass stat cards, composed as in the design reference.

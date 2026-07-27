@@ -5968,3 +5968,38 @@ button.coach-rec:active {
     grid-template-columns: 90px 1fr auto;
   }
 }
+/* ============================================================
+   App-level error boundary fallback
+   ============================================================ */
+.app-error {
+  min-height: 100vh;
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: var(--s-6);
+  background: var(--bg);
+}
+.app-error-card {
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+  padding: var(--s-10) var(--s-8);
+  border-radius: var(--r-xl);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+}
+.app-error-card h1 {
+  margin: 0 0 var(--s-3);
+  font-size: 22px;
+  letter-spacing: -0.02em;
+}
+.app-error-card p {
+  margin: 0 0 var(--s-6);
+  color: var(--text-muted);
+  font-size: 14.5px;
+  line-height: 1.6;
+}
+.app-error-card .btn-primary {
+  padding: 12px 28px;
+}
