@@ -2139,6 +2139,68 @@ a {
   margin-top: 0;
 }
 
+/* ---- Grouped settings sections (reference visual language) ---- */
+.set-groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+.set-group {
+  padding: var(--s-5);
+  border-radius: var(--r-lg);
+  background: var(--bg-elev-1);
+  border: 1px solid var(--border);
+}
+.set-group-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 var(--s-4);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.set-group-icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  background: var(--grad);
+  color: #fff;
+  box-shadow: var(--shadow-accent);
+}
+.set-group-icon svg {
+  width: 15px;
+  height: 15px;
+}
+.set-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-5);
+  flex-wrap: wrap;
+}
+.set-row-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.set-row-copy strong {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.set-row-copy em {
+  font-style: normal;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.set-row .range-row {
+  flex: 1;
+  min-width: 180px;
+  max-width: 260px;
+}
+
 .provider-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -4322,7 +4384,260 @@ button.coach-rec:active {
    Study analytics dashboard
    ============================================================ */
 .analytics-modal {
-  max-width: 760px;
+  max-width: 880px;
+}
+
+/* ---- Reference overview: range selector, summary cards, charts ---- */
+.an-report-head {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--s-5);
+}
+.an-range {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--r-pill);
+  background: var(--inset);
+  border: 1px solid var(--border);
+}
+.an-range-btn {
+  padding: 6px 14px;
+  border: none;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  transition: color var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
+}
+.an-range-btn:hover {
+  color: var(--text);
+}
+.an-range-btn.active {
+  background: var(--panel);
+  color: var(--accent);
+  box-shadow: var(--shadow-sm);
+}
+
+.an-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--s-4);
+  margin-bottom: var(--s-5);
+}
+.an-sum {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: var(--s-4) var(--s-5);
+  border-radius: var(--r-lg);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
+  transition: transform var(--t-fast) var(--ease-spring), box-shadow var(--t-med) var(--ease);
+}
+.an-sum:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+.an-sum-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  margin-bottom: 6px;
+  border-radius: 11px;
+  color: #fff;
+}
+.an-sum-icon svg {
+  width: 17px;
+  height: 17px;
+}
+.an-sum-accent .an-sum-icon {
+  background: linear-gradient(140deg, #7d80ea, #5b5fd6);
+}
+.an-sum-green .an-sum-icon {
+  background: linear-gradient(140deg, #4fc38c, #2fa87a);
+}
+.an-sum-amber .an-sum-icon {
+  background: linear-gradient(140deg, #f0b45c, #d9922f);
+}
+.an-sum-violet .an-sum-icon {
+  background: linear-gradient(140deg, #b3a6f0, #7a63e0);
+}
+.an-sum-value {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.an-sum-label {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.an-charts {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: var(--s-4);
+  margin-bottom: var(--s-6);
+}
+.an-card {
+  padding: var(--s-5);
+  border-radius: var(--r-lg);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
+}
+.an-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  margin-bottom: var(--s-4);
+}
+.an-card-head h3 {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.an-card-head .an-head-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--accent);
+}
+
+/* Line chart */
+.an-line {
+  position: relative;
+}
+.an-line-svg {
+  width: 100%;
+  height: 150px;
+  display: block;
+  overflow: visible;
+}
+.an-line-grid {
+  stroke: rgba(76, 70, 150, 0.1);
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+  vector-effect: non-scaling-stroke;
+}
+.an-line-stroke {
+  stroke: var(--accent);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.an-line-dot {
+  fill: #fff;
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+.an-line-axis {
+  position: relative;
+  height: 16px;
+  margin-top: 8px;
+}
+.an-line-axis span {
+  position: absolute;
+  transform: translateX(-50%);
+  font-size: 10.5px;
+  color: var(--text-faint);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Donut chart */
+.an-donut {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-4);
+}
+.an-donut-svg {
+  width: 148px;
+  height: 148px;
+  flex-shrink: 0;
+}
+.an-donut-track {
+  fill: none;
+  stroke: rgba(76, 70, 150, 0.1);
+  stroke-width: 13;
+}
+.an-donut-arc {
+  fill: none;
+  stroke-width: 13;
+  stroke-linecap: butt;
+  transform: rotate(-90deg);
+  transform-origin: 60px 60px;
+  transition: stroke-dasharray var(--t-slow) var(--ease);
+}
+/* Stroke colours for the arcs (the shared an-seg-* set only defines fills). */
+.an-donut-arc.an-seg-new {
+  stroke: rgba(76, 70, 150, 0.28);
+}
+.an-donut-arc.an-seg-learning {
+  stroke: #f0a34a;
+}
+.an-donut-arc.an-seg-young {
+  stroke: var(--accent-2);
+}
+.an-donut-arc.an-seg-mature {
+  stroke: var(--ok);
+}
+.an-donut-total {
+  text-anchor: middle;
+  font-size: 26px;
+  font-weight: 700;
+  fill: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.an-donut-sub {
+  text-anchor: middle;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  fill: var(--text-faint);
+}
+.an-donut-legend {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+.an-donut-legend .an-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+.an-donut-legend .an-legend-item strong {
+  margin-left: auto;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.an-donut-legend .an-legend-item em {
+  font-style: normal;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+  min-width: 34px;
+  text-align: right;
+}
+
+@media (max-width: 720px) {
+  .an-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .an-charts {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Segment / maturity colors (shared) */

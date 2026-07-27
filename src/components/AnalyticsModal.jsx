@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   CloseIcon,
   FlameIcon,
@@ -8,6 +8,8 @@ import {
   SparklesIcon,
   LayersIcon,
   CheckIcon,
+  ClockIcon,
+  TrendUpIcon,
 } from './Icons.jsx'
 import {
   totals,
@@ -20,6 +22,7 @@ import {
   avgEase,
   deckProgress,
   quizStats,
+  activitySeries,
 } from '../services/analytics.js'
 
 const WEEKS = 13
@@ -59,6 +62,117 @@ function formatAttemptDate(at) {
   const d = new Date(at)
   if (Number.isNaN(d.getTime())) return ''
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+// Premium summary card for the reference's top row. `delta` is optional and
+// only rendered when a real value is supplied.
+function SummaryCard({ icon, value, label, delta, tone = 'accent' }) {
+  return (
+    <article className={`an-sum an-sum-${tone}`}>
+      <span className="an-sum-icon" aria-hidden="true">
+        {icon}
+      </span>
+      <span className="an-sum-value">{value}</span>
+      <span className="an-sum-label">{label}</span>
+      {delta != null && <span className="an-sum-delta">{delta}</span>}
+    </article>
+  )
+}
+
+// Study-trend line chart built from REAL daily-review data (activitySeries).
+// Pure SVG: area gradient + grid + line + points, with an HTML axis-label row.
+function LineChart({ series }) {
+  const W = 320
+  const H = 120
+  const values = series.map((d) => d.r || 0)
+  const max = Math.max(1, ...values)
+  const n = values.length
+  const x = (i) => (n <= 1 ? W / 2 : (i / (n - 1)) * W)
+  const y = (v) => H - (v / max) * (H - 8) - 4
+  const line = values.map((v, i) => `${i === 0 ? 'M' : 'L'} ${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(' ')
+  const area = `${line} L ${W} ${H} L 0 ${H} Z`
+  // A handful of evenly-spaced axis labels so long ranges don't crowd.
+  const step = Math.max(1, Math.round(n / 7))
+  const labels = series
+    .map((d, i) => ({ i, txt: d.date.toLocaleDateString(undefined, { weekday: n <= 7 ? 'short' : undefined, month: n > 7 ? 'short' : undefined, day: n > 7 ? 'numeric' : undefined }) }))
+    .filter((_, i) => i % step === 0 || i === n - 1)
+
+  return (
+    <div className="an-line">
+      <svg className="an-line-svg" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label="Study trend">
+        <defs>
+          <linearGradient id="an-line-grad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="rgba(91,95,214,0.28)" />
+            <stop offset="100%" stopColor="rgba(91,95,214,0)" />
+          </linearGradient>
+        </defs>
+        {[0.25, 0.5, 0.75].map((g) => (
+          <line key={g} x1="0" x2={W} y1={H * g} y2={H * g} className="an-line-grid" />
+        ))}
+        <path d={area} fill="url(#an-line-grad)" />
+        <path d={line} className="an-line-stroke" fill="none" vectorEffect="non-scaling-stroke" />
+        {values.map((v, i) => (
+          <circle key={i} cx={x(i)} cy={y(v)} r="2.4" className="an-line-dot" vectorEffect="non-scaling-stroke" />
+        ))}
+      </svg>
+      <div className="an-line-axis" aria-hidden="true">
+        {labels.map((l) => (
+          <span key={l.i} style={{ left: `${(x(l.i) / W) * 100}%` }}>
+            {l.txt}
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// Mastery-distribution donut built from REAL maturityCounts. SVG ring with one
+// arc per segment, centre total, and a legend.
+function Donut({ segments, total }) {
+  const R = 42
+  const C = 2 * Math.PI * R
+  let offset = 0
+  return (
+    <div className="an-donut">
+      <svg viewBox="0 0 120 120" className="an-donut-svg" role="img" aria-label="Mastery distribution">
+        <circle cx="60" cy="60" r={R} className="an-donut-track" />
+        {total > 0 &&
+          segments.map((s) => {
+            const frac = s.value / total
+            const dash = frac * C
+            const el = (
+              <circle
+                key={s.key}
+                cx="60"
+                cy="60"
+                r={R}
+                className={`an-donut-arc an-seg-${s.cls}`}
+                strokeDasharray={`${dash} ${C - dash}`}
+                strokeDashoffset={-offset}
+              />
+            )
+            offset += dash
+            return el
+          })}
+        <text x="60" y="55" className="an-donut-total">
+          {total}
+        </text>
+        <text x="60" y="72" className="an-donut-sub">
+          cards
+        </text>
+      </svg>
+      <div className="an-donut-legend">
+        {segments.map((s) => (
+          <span key={s.key} className="an-legend-item">
+            <span className={`an-dot an-seg-${s.cls}`} />
+            {s.label}
+            <strong>{s.value}</strong>
+            {total > 0 && <em>{Math.round((s.value / total) * 100)}%</em>}
+          </span>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 function StatTile({ icon, value, label, accent }) {
@@ -109,6 +223,9 @@ function Legend({ segments, total }) {
 
 export default function AnalyticsModal({ sets, stats, onClose }) {
   const closeRef = useRef(null)
+  // Local view-only state: how many days the trend chart spans. Reads existing
+  // data via activitySeries — no analytics calculations are changed.
+  const [range, setRange] = useState(7)
 
   useEffect(() => {
     closeRef.current?.focus()
@@ -145,6 +262,7 @@ export default function AnalyticsModal({ sets, stats, onClose }) {
     .sort((a, b) => b.masteryPct - a.masteryPct)
 
   const quiz = quizStats(sets)
+  const series = activitySeries(stats, range, now)
 
   const nothingYet = t.reviews === 0 && maturity.total === 0
 
@@ -183,21 +301,71 @@ export default function AnalyticsModal({ sets, stats, onClose }) {
           </div>
         ) : (
           <>
-            {/* Headline tiles */}
-            <div className="an-tiles">
-              <StatTile
-                icon={<FlameIcon />}
-                value={streak}
-                label={`day streak${streak === 1 ? '' : ''}`}
-                accent
+            {/* ---- Reference overview: range selector, summary cards, charts ---- */}
+            <div className="an-report-head">
+              <div className="an-range" role="group" aria-label="Trend range">
+                {[7, 30, 90].map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    className={`an-range-btn${range === d ? ' active' : ''}`}
+                    onClick={() => setRange(d)}
+                    aria-pressed={range === d}
+                  >
+                    Last {d} days
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="an-summary">
+              <SummaryCard
+                icon={<CardsIcon />}
+                value={t.reviews.toLocaleString()}
+                label="Cards Reviewed"
+                tone="accent"
               />
-              <StatTile icon={<CardsIcon />} value={todayCount} label="reviews today" />
-              <StatTile icon={<ChartIcon />} value={t.reviews.toLocaleString()} label="total reviews" />
-              <StatTile
+              <SummaryCard
                 icon={<TargetIcon />}
                 value={ret === null ? '—' : `${Math.round(ret * 100)}%`}
-                label="retention"
+                label="Accuracy"
+                tone="green"
               />
+              <SummaryCard
+                icon={<FlameIcon />}
+                value={streak}
+                label={`Day Streak${longest > streak ? ` · best ${longest}` : ''}`}
+                tone="amber"
+              />
+              <SummaryCard
+                icon={<SparklesIcon />}
+                value={maturity.total ? `${Math.round((maturity.mature / maturity.total) * 100)}%` : '—'}
+                label="Mastered"
+                tone="violet"
+              />
+            </div>
+
+            <div className="an-charts">
+              <section className="an-card an-trend">
+                <div className="an-card-head">
+                  <h3>
+                    <TrendUpIcon className="an-head-icon" />
+                    Study Trend
+                  </h3>
+                  <span className="an-muted">reviews / day</span>
+                </div>
+                <LineChart series={series} />
+              </section>
+
+              <section className="an-card">
+                <div className="an-card-head">
+                  <h3>
+                    <LayersIcon className="an-head-icon" />
+                    Mastery Distribution
+                  </h3>
+                </div>
+                <Donut segments={maturitySegs} total={maturity.total} />
+              </section>
             </div>
 
             {/* Activity heatmap */}

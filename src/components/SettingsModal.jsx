@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { CloseIcon } from './Icons.jsx'
+import { CloseIcon, SparklesIcon, CardsIcon } from './Icons.jsx'
 import { fetchProviderStatus } from '../services/aiProxy.js'
 
 const PROVIDERS = [
@@ -68,51 +68,68 @@ export default function SettingsModal({ settings, onSave, onClose }) {
           </button>
         </div>
 
-        <span className="field-label" id="provider-label">
-          AI Provider
-        </span>
-        <div className="provider-grid" role="radiogroup" aria-labelledby="provider-label">
-          {PROVIDERS.map((p) => {
-            const selected = draft.provider === p.id
-            const available = isAvailable(p.id)
-            return (
-              <button
-                key={p.id}
-                type="button"
-                role="radio"
-                aria-checked={selected}
-                disabled={!available}
-                className={`provider-card ${selected ? 'selected' : ''} ${available ? '' : 'unavailable'}`}
-                onClick={() => update({ provider: p.id })}
-              >
-                <strong>{p.name}</strong>
-                <span>{available ? p.sub : 'Not configured on server'}</span>
-              </button>
-            )
-          })}
-        </div>
+        <div className="set-groups">
+          <section className="set-group">
+            <h3 className="set-group-title" id="provider-label">
+              <span className="set-group-icon" aria-hidden="true">
+                <SparklesIcon />
+              </span>
+              AI Provider
+            </h3>
+            <div className="provider-grid" role="radiogroup" aria-labelledby="provider-label">
+              {PROVIDERS.map((p) => {
+                const selected = draft.provider === p.id
+                const available = isAvailable(p.id)
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    disabled={!available}
+                    className={`provider-card ${selected ? 'selected' : ''} ${available ? '' : 'unavailable'}`}
+                    onClick={() => update({ provider: p.id })}
+                  >
+                    <strong>{p.name}</strong>
+                    <span>{available ? p.sub : 'Not configured on server'}</span>
+                  </button>
+                )
+              })}
+            </div>
+            <p className="field-note">
+              API keys are configured on the server and never sent from your browser. Demo mode
+              runs fully offline with no key. To enable OpenAI or Claude, set the matching key in
+              the server&apos;s environment.
+            </p>
+          </section>
 
-        <p className="field-note">
-          API keys are configured on the server and never sent from your browser. Demo mode runs
-          fully offline with no key. To enable OpenAI or Claude, set the matching key in the
-          server&apos;s environment.
-        </p>
-
-        <label className="field-label" htmlFor="cardCount">
-          Cards per set
-        </label>
-        <div className="range-row">
-          <input
-            id="cardCount"
-            type="range"
-            min="3"
-            max="20"
-            value={draft.cardCount}
-            onChange={(e) => update({ cardCount: Number(e.target.value) })}
-          />
-          <span className="range-value" aria-live="polite">
-            {draft.cardCount}
-          </span>
+          <section className="set-group">
+            <h3 className="set-group-title">
+              <span className="set-group-icon" aria-hidden="true">
+                <CardsIcon />
+              </span>
+              Generation
+            </h3>
+            <div className="set-row">
+              <label className="set-row-copy" htmlFor="cardCount">
+                <strong>Cards per set</strong>
+                <em>How many flashcards each generated deck contains.</em>
+              </label>
+              <div className="range-row">
+                <input
+                  id="cardCount"
+                  type="range"
+                  min="3"
+                  max="20"
+                  value={draft.cardCount}
+                  onChange={(e) => update({ cardCount: Number(e.target.value) })}
+                />
+                <span className="range-value" aria-live="polite">
+                  {draft.cardCount}
+                </span>
+              </div>
+            </div>
+          </section>
         </div>
 
         <div className="modal-actions">
