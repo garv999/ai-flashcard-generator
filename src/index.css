@@ -1046,6 +1046,50 @@ a {
   color: var(--text-muted);
   transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
 }
+/* Keyword ⇄ Semantic toggle inside the search field */
+.header-search-mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  padding: 5px 11px 5px 9px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-pill);
+  background: var(--panel);
+  color: var(--text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease);
+}
+.header-search-mode svg {
+  width: 13px;
+  height: 13px;
+}
+.header-search-mode:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+.header-search-mode.semantic {
+  background: var(--accent-soft);
+  border-color: transparent;
+  color: var(--accent);
+}
+@media (max-width: 620px) {
+  .header-search-mode span {
+    display: none;
+  }
+}
+
+/* "searching by meaning…" tag next to the section heading */
+.dsearch-tag {
+  margin-left: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+  vertical-align: middle;
+  letter-spacing: 0;
+}
 .header-search-clear svg {
   width: 13px;
   height: 13px;

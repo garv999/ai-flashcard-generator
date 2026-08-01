@@ -6,6 +6,7 @@ import {
   BellIcon,
   SearchIcon,
   CloseIcon,
+  SparklesIcon,
 } from './Icons.jsx'
 
 // Top bar, composed to match the design reference: a real search field on the
@@ -18,6 +19,8 @@ export default function Header({
   provider,
   query,
   onSearch,
+  searchMode = 'keyword',
+  onSearchMode,
   onOpenSettings,
   onOpenIntelligence,
   user,
@@ -25,6 +28,7 @@ export default function Header({
   onLogout,
   authBusy,
 }) {
+  const semantic = searchMode === 'semantic'
   const isLive = provider !== 'demo'
   const label =
     provider === 'openai' ? 'OpenAI' : provider === 'anthropic' ? 'Claude' : 'Demo mode'
@@ -52,6 +56,18 @@ export default function Header({
             <CloseIcon />
           </button>
         )}
+        {/* Keyword ⇄ Semantic toggle. Semantic uses vector embeddings to match by
+            meaning; keyword matches exact text. */}
+        <button
+          type="button"
+          className={`header-search-mode${semantic ? ' semantic' : ''}`}
+          onClick={() => onSearchMode?.(semantic ? 'keyword' : 'semantic')}
+          aria-pressed={semantic}
+          title={semantic ? 'Semantic search (by meaning) — click for keyword' : 'Keyword search — click for semantic (by meaning)'}
+        >
+          <SparklesIcon />
+          <span>{semantic ? 'Semantic' : 'Keyword'}</span>
+        </button>
       </div>
 
       <div className="header-actions">

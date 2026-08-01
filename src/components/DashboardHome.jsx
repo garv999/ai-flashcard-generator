@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { CardsIcon, LayersIcon, BrainIcon, FlameIcon, SparklesIcon, TrashIcon } from './Icons.jsx'
 import { deckDueCount } from '../services/srs.js'
+import useSemanticSearch from '../hooks/useSemanticSearch.js'
 
 // Tiny inline sparkline. Purely decorative shape — no data plumbing.
 function Spark({ points, tone = 'accent' }) {
@@ -60,11 +61,21 @@ export default function DashboardHome({
   activeId,
   user,
   query = '',
+  searchMode = 'keyword',
+  settings,
   onSelect,
   onDelete,
   onNewDeck,
 }) {
   const [filter, setFilter] = useState('All')
+
+  // Semantic ranking runs only in semantic mode (async; keyword stays instant).
+  const { matchIds, loading: semLoading, failed: semFailed } = useSemanticSearch(
+    query,
+    searchMode === 'semantic',
+    sets,
+    settings,
+  )
 
   // Stats reflect the WHOLE library, not the current search.
   const deckCount = sets.length
@@ -75,10 +86,11 @@ export default function DashboardHome({
 
   const first = (user?.displayName || '').split(' ')[0]
 
-  // Real search: a deck matches when the query appears in its topic OR in any of
-  // its flashcards' question/answer text. Case-insensitive, whitespace-trimmed.
   const q = query.trim().toLowerCase()
-  const visibleSets = q
+
+  // Keyword search: a deck matches when the query appears in its topic OR in any
+  // of its flashcards' question/answer text. Case-insensitive.
+  const keywordSets = q
     ? sets.filter(
         (s) =>
           s.topic?.toLowerCase().includes(q) ||
@@ -87,6 +99,15 @@ export default function DashboardHome({
           ),
       )
     : sets
+
+  // Semantic search: order decks by vector-similarity ranking (matchIds). Falls
+  // back to keyword when embeddings failed or the pass hasn't resolved yet.
+  const semanticActive = searchMode === 'semantic' && !!q && !semFailed
+  let visibleSets = keywordSets
+  if (semanticActive && matchIds) {
+    const byId = new Map(sets.map((s) => [s.id, s]))
+    visibleSets = matchIds.map((id) => byId.get(id)).filter(Boolean)
+  }
 
   const recent = visibleSets.slice(0, 2)
 
@@ -157,7 +178,14 @@ export default function DashboardHome({
 
       <section className="dsection" id="decks" aria-label="Your decks">
         <div className="dsection-head">
-          <h2>Your Decks</h2>
+          <h2>
+            Your Decks
+            {semanticActive && (
+              <span className="dsearch-tag" aria-live="polite">
+                {semLoading ? 'searching by meaning…' : 'semantic results'}
+              </span>
+            )}
+          </h2>
           <button type="button" className="dnew" onClick={onNewDeck}>
             <SparklesIcon />
             New Deck

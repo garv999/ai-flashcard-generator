@@ -86,6 +86,7 @@ export default function App() {
   const [cloudWarning, setCloudWarning] = useState(false) // cloud sync degraded
   const [coachNav, setCoachNav] = useState(null) // study-coach navigation request
   const [query, setQuery] = useState('') // dashboard search (decks / topics / cards)
+  const [searchMode, setSearchMode] = useState('keyword') // 'keyword' | 'semantic'
 
   // Settings stay device-local (they hold the provider + API key).
   useEffect(() => saveSettings(settings), [settings])
@@ -393,6 +394,8 @@ export default function App() {
         provider={settings.provider}
         query={query}
         onSearch={setQuery}
+        searchMode={searchMode}
+        onSearchMode={setSearchMode}
         onOpenSettings={() => setShowSettings(true)}
         onOpenIntelligence={openIntelligence}
         user={user}
@@ -419,6 +422,8 @@ export default function App() {
             activeId={activeId}
             user={user}
             query={query}
+            searchMode={searchMode}
+            settings={settings}
             onSelect={setActiveId}
             onDelete={handleDelete}
             onNewDeck={() => document.getElementById('generate')?.scrollIntoView({ block: 'start' })}
