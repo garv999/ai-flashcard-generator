@@ -38,7 +38,8 @@ export function validatePdfFile(file) {
 // `pages[i]` is the text of page (i + 1). Calls onProgress({current,total}).
 export async function extractPdfText(file, { onProgress } = {}) {
   const data = await file.arrayBuffer()
-  const pdf = await pdfjsLib.getDocument({ data }).promise
+  const loadingTask = pdfjsLib.getDocument({ data })
+  const pdf = await loadingTask.promise
   try {
     const numPages = pdf.numPages
     const pages = []
@@ -57,7 +58,9 @@ export async function extractPdfText(file, { onProgress } = {}) {
     }
     return { numPages, pages }
   } finally {
-    pdf.destroy()
+    // In pdfjs v6 the document proxy has no destroy(); teardown (doc + worker
+    // port) is done via the loading task.
+    await loadingTask.destroy()
   }
 }
 

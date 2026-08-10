@@ -11,6 +11,7 @@ import {
   CardsIcon,
   CheckIcon,
   ChevronRightIcon,
+  FileTextIcon,
 } from './Icons.jsx'
 import {
   makeMessage,
@@ -58,6 +59,49 @@ const KIND_ICON = {
 // repetition, quizzes, analytics, mastery and study plans — to recommend what
 // to study next, surface weak areas, estimate workload and track exam prep.
 // Persists the conversation to localStorage (Demo) or Firestore (signed in).
+// Citation footer under a grounded assistant answer: an "answer based on your
+// material" badge (document-grounded only) plus a collapsible Sources list —
+// page/section citations for PDF-backed decks, or referenced flashcards.
+function MessageSources({ grounded, sources }) {
+  const items = sources?.items || []
+  const isDoc = sources?.kind === 'document'
+  return (
+    <div className="chat-sources">
+      {grounded && (
+        <span className="chat-grounded" title="This answer was built from the uploaded study material">
+          <FileTextIcon />
+          Answer based on uploaded material
+        </span>
+      )}
+      {items.length > 0 && (
+        <details className="chat-src-details">
+          <summary>
+            {isDoc ? 'Sources' : 'Referenced flashcards'}
+            <span className="chat-src-count">{items.length}</span>
+          </summary>
+          <ul className="chat-src-list">
+            {items.map((s, i) => (
+              <li key={i}>
+                {isDoc ? (
+                  <>
+                    <span className="chat-src-ref">
+                      {s.page != null ? `Page ${s.page}` : s.label || 'Document'}
+                      {s.section ? ` · Section ${s.section}` : ''}
+                    </span>
+                    {s.snippet && <span className="chat-src-snippet">{s.snippet}…</span>}
+                  </>
+                ) : (
+                  <span className="chat-src-ref">{s.label}</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </div>
+  )
+}
+
 export default function ChatAssistant({
   deck,
   sets = [],
@@ -198,7 +242,16 @@ export default function ChatAssistant({
           onToken,
         })
         if (signal.aborted) return // superseded — drop the result, don't persist
-        const finalMsg = { ...placeholder, text: reply, streaming: false }
+        // answerAssistant returns { text, sources, grounded }; tolerate a bare
+        // string too so nothing breaks if that contract ever changes.
+        const replyText = typeof reply === 'string' ? reply : reply?.text || ''
+        const finalMsg = {
+          ...placeholder,
+          text: replyText,
+          streaming: false,
+          sources: reply?.sources || null,
+          grounded: !!reply?.grounded,
+        }
         setMessages((cur) =>
           cur.some((m) => m.id === replyId)
             ? cur.map((m) => (m.id === replyId ? finalMsg : m))
@@ -364,6 +417,9 @@ export default function ChatAssistant({
                   <MessageContent text={m.text} />
                 )}
               </div>
+              {m.role === 'assistant' && !m.streaming && (m.grounded || m.sources) && (
+                <MessageSources grounded={m.grounded} sources={m.sources} />
+              )}
             </div>
           ))}
 

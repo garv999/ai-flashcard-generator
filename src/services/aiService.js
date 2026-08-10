@@ -494,6 +494,39 @@ function mockAnswer(question, deck, results = null) {
 // context. When the deck has a retrieval index (built from an uploaded PDF), the
 // shared RAG layer selects the most relevant document passages and grounds the
 // answer in them — otherwise it falls back to the deck's flashcards as before.
+// Build the citation list for an answer. Document-grounded answers cite the
+// pages/sections of the retrieved passages; topic decks cite the flashcards the
+// answer drew on. Returns { kind: 'document' | 'flashcards', items } or null.
+function buildSources(retrieved, question, deck) {
+  if (retrieved?.mode === 'passages' && retrieved.results?.length) {
+    const seen = new Set()
+    const items = []
+    for (const r of retrieved.results) {
+      const page = r.chunk?.page ?? null
+      const section = r.chunk?.section ?? null
+      const key = page != null ? `p${page}${section ? '/' + section : ''}` : `x${items.length}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      items.push({
+        page,
+        section,
+        snippet: (r.chunk?.text || '').replace(/\s+/g, ' ').trim().slice(0, 140),
+        score: Math.round((r.score || 0) * 100) / 100,
+      })
+    }
+    return { kind: 'document', items }
+  }
+  if (retrieved?.mode === 'overview') {
+    return { kind: 'document', items: [{ label: 'Document overview (lead pages)' }] }
+  }
+  const cards = rankCards(question, deck, 3)
+  if (cards.length) return { kind: 'flashcards', items: cards.map((c) => ({ label: c.question })) }
+  return null
+}
+
+// Returns { text, sources, grounded }. `grounded` is true when the answer was
+// built from the uploaded document's retrieved passages/overview; `sources`
+// lists page/section citations (document) or referenced flashcards (topic deck).
 export async function answerAssistant({ question, deck, history = [], settings, user, coach, signal, onToken }) {
   const q = String(question || '').trim()
   if (!q) throw new Error('Ask a question to get started.')
@@ -530,23 +563,28 @@ export async function answerAssistant({ question, deck, history = [], settings, 
   const sourceBlock = retrieved ? `${sourceHeading}\n${retrieved.text}\n\n` : ''
   const system = `${buildAssistantSystem(deck, !!retrieved, !!coach)}\n\n${coachBlock}${sourceBlock}FLASHCARDS:\n${deckContext(deck)}`
 
+  // Citations are known from retrieval, independent of the LLM call below.
+  const sources = buildSources(retrieved, q, deck)
+  const grounded = !!retrieved // answer is grounded in the uploaded document
+
+  let text
   if (provider === 'openai') {
-    return openaiChat(system, msgs, { signal, onToken })
-  }
-  if (provider === 'anthropic') {
+    text = await openaiChat(system, msgs, { signal, onToken })
+  } else if (provider === 'anthropic') {
     // Anthropic requires the first message to be from the user.
     const trimmed = [...msgs]
     while (trimmed.length && trimmed[0].role !== 'user') trimmed.shift()
-    return anthropicChat(system, trimmed, { signal, onToken })
+    text = await anthropicChat(system, trimmed, { signal, onToken })
+  } else {
+    // Demo mode — offline. Coaching questions are answered from the progress
+    // briefing; questions that call for a visual get a generated diagram / table;
+    // everything else falls back to retrieved passages / flashcards. The finished
+    // answer is then revealed incrementally so Demo streams like a live provider.
+    await delay(300, signal)
+    const answer = demoAnswer(q, deck, coach, retrieved)
+    text = await streamOut(answer, onToken, signal)
   }
-
-  // Demo mode — offline. Coaching questions are answered from the progress
-  // briefing; questions that call for a visual get a generated diagram / table;
-  // everything else falls back to retrieved passages / flashcards. The finished
-  // answer is then revealed incrementally so Demo streams like a live provider.
-  await delay(300, signal)
-  const answer = demoAnswer(q, deck, coach, retrieved)
-  return streamOut(answer, onToken, signal)
+  return { text, sources, grounded }
 }
 
 // Compose the full Demo-mode answer (offline). Split out so it can be streamed.

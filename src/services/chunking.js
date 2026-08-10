@@ -88,3 +88,30 @@ export function chunkText(text, opts = {}) {
     .slice(0, maxChunks)
     .map((text, index) => ({ index, text }))
 }
+
+// Best-effort section label from a chunk's leading text: a numbered heading such
+// as "3.4 Kinematics" → "3.4". Returns null when none is present.
+const HEADING_RE = /^\s*(\d+(?:\.\d+){0,3})\s+[A-Za-z]/
+function detectSection(text) {
+  const m = (text || '').match(HEADING_RE)
+  return m ? m[1] : null
+}
+
+// Page-aware chunking for citations. `pages` is [{ page, text }] (real 1-based
+// page numbers). Each page is chunked independently so every chunk carries the
+// page it came from, plus a best-effort section label. Result shape mirrors
+// chunkText's, with `page` and `section` added:
+//   [{ index, text, page, section }]
+export function chunkPages(pages, opts = {}) {
+  const maxChunks = opts.maxChunks || MAX_CHUNKS
+  const out = []
+  let idx = 0
+  for (const p of pages || []) {
+    if (idx >= maxChunks) break
+    for (const c of chunkText(p.text, opts)) {
+      if (idx >= maxChunks) break
+      out.push({ index: idx++, text: c.text, page: p.page, section: detectSection(c.text) })
+    }
+  }
+  return out
+}

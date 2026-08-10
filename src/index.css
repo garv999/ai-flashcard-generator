@@ -6047,3 +6047,102 @@ button.coach-rec:active {
 .app-error-card .btn-primary {
   padding: 12px 28px;
 }
+
+/* ============================================================
+   AI Assistant — RAG citations (grounded badge + Sources)
+   ============================================================ */
+.chat-sources {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 6px 0 2px 2px;
+  max-width: 92%;
+}
+.chat-grounded {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  padding: 4px 10px;
+  border-radius: var(--r-pill);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 600;
+}
+.chat-grounded svg {
+  width: 12px;
+  height: 12px;
+}
+.chat-src-details {
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--bg-elev-1);
+  overflow: hidden;
+}
+.chat-src-details > summary {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 12px;
+  cursor: pointer;
+  list-style: none;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  user-select: none;
+}
+.chat-src-details > summary::-webkit-details-marker {
+  display: none;
+}
+.chat-src-details > summary::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform var(--t-fast) var(--ease);
+}
+.chat-src-details[open] > summary::before {
+  transform: rotate(45deg);
+}
+.chat-src-count {
+  display: grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  margin-left: auto;
+  border-radius: var(--r-pill);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 10.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.chat-src-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.chat-src-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: 10px;
+  border-left: 2px solid var(--accent-ring);
+}
+.chat-src-ref {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+.chat-src-snippet {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}

@@ -17,7 +17,7 @@
 
 import { doc, setDoc, getDoc, deleteDoc } from 'firebase/firestore'
 import { db } from './firebase'
-import { chunkText } from './chunking.js'
+import { chunkText, chunkPages } from './chunking.js'
 import { resolveEmbedder, embedTexts, embedQuery } from './embeddings.js'
 
 const INDEX_VERSION = 1
@@ -72,8 +72,11 @@ function unpackVectors(b64, count, dim) {
 
 // Build an in-memory index from raw document text. Returns null when there's no
 // usable text. onProgress is forwarded from the embedding step.
-export async function buildIndex(text, settings, { onProgress } = {}) {
-  const chunks = chunkText(text)
+export async function buildIndex(text, settings, { onProgress, pages } = {}) {
+  // When per-page text is supplied (PDF uploads), chunk page-aware so every
+  // chunk carries a page/section for citations; otherwise fall back to plain
+  // text chunking (back-compatible).
+  const chunks = Array.isArray(pages) && pages.length ? chunkPages(pages) : chunkText(text)
   if (!chunks.length) return null
   const embedder = resolveEmbedder(settings)
   const vectors = await embedTexts(chunks.map((c) => c.text), embedder, settings, { onProgress })
@@ -96,6 +99,9 @@ export function serializeIndex(index) {
     dim: index.embedder.dim,
     count: index.chunks.length,
     chunks: index.chunks.map((c) => c.text),
+    // Parallel citation metadata (omitted entirely for legacy text-only indexes).
+    pages: index.chunks.map((c) => c.page ?? null),
+    sections: index.chunks.map((c) => c.section ?? null),
     vecs: packVectors(index.vectors, index.embedder.dim),
   }
 }
@@ -107,7 +113,12 @@ export function deserializeIndex(data) {
     version: data.v || INDEX_VERSION,
     embedder: data.embedder,
     createdAt: data.createdAt,
-    chunks: (data.chunks || []).map((text, index) => ({ index, text })),
+    chunks: (data.chunks || []).map((text, index) => ({
+      index,
+      text,
+      page: data.pages?.[index] ?? null,
+      section: data.sections?.[index] ?? null,
+    })),
     vectors: unpackVectors(data.vecs, data.count, dim),
   }
 }
@@ -249,8 +260,8 @@ export async function migrateLocalIndexes(uid) {
 
 // Build an index from document text and persist it for `deckId`. Returns a
 // small marker ({ count, dim, provider }) to attach to the deck, or null.
-export async function createAndSaveIndex({ deckId, text, settings, user, onProgress }) {
-  const index = await buildIndex(text, settings, { onProgress })
+export async function createAndSaveIndex({ deckId, text, pages, settings, user, onProgress }) {
+  const index = await buildIndex(text, settings, { onProgress, pages })
   if (!index) return null
   await saveIndex({ deckId, user, index })
   return indexMarker(index)

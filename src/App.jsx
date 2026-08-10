@@ -230,7 +230,7 @@ export default function App() {
       // a failure here never blocks deck creation.
       try {
         setGenProgress('Indexing document for AI…')
-        const marker = await createAndSaveIndex({ deckId, text: content, settings, user })
+        const marker = await createAndSaveIndex({ deckId, text: content, pages: meta.pages, settings, user })
         if (marker) {
           const withRag = { ...newDeck, rag: marker }
           setSets((prev) => prev.map((d) => (d.id === deckId ? withRag : d)))

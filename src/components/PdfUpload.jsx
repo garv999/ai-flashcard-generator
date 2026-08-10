@@ -106,6 +106,9 @@ export default function PdfUpload({ onGenerate, loading }) {
       pageCount: numPages,
       uploadDate: new Date().toISOString(),
       source: 'pdf',
+      // Per-page text with REAL 1-based page numbers, so the RAG index can cite
+      // the page each retrieved passage came from.
+      pages: pages.slice(from - 1, to).map((text, i) => ({ page: from + i, text })),
       pageRange: rangeMode === 'range' ? { from, to } : null,
     }
 
