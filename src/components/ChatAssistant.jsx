@@ -20,18 +20,20 @@ import {
   subscribeToChat,
   appendChatMessages,
 } from '../services/chat.js'
-import { answerAssistant } from '../services/aiService.js'
+import { askTutor } from '../services/tutor/index.js'
 import { buildCoachBriefing } from '../services/coach.js'
 import MessageContent from './MessageContent.jsx'
 
-// One-tap study prompts covering the assistant's content skills. Each sends a
-// ready-made question; users can also type their own (including follow-ups).
-const QUICK_ACTIONS = [
-  { key: 'explain', label: 'Explain', prompt: 'Explain the most important concept in this deck clearly.' },
-  { key: 'simplify', label: 'Simplify', prompt: "Explain this deck in simple terms, like I'm a beginner." },
-  { key: 'example', label: 'Example', prompt: 'Give a real-world example for a key concept in this deck.' },
-  { key: 'compare', label: 'Compare', prompt: 'Compare two important concepts from this deck.' },
-  { key: 'mnemonic', label: 'Mnemonic', prompt: 'Create a mnemonic to help me remember the key facts in this deck.' },
+// Tutor modes (spec §TUTOR MODES). Each chip forces a real tutor behavior: the
+// mode is passed through to askTutor, which adapts the answer to the learner's
+// state. If the learner has typed something, the mode is applied to THAT text;
+// otherwise a ready-made prompt is used. Typing a free question (no chip) runs
+// in AUTO mode, where the tutor classifies the intent itself.
+const TUTOR_MODES = [
+  { key: 'explain', label: 'Explain', mode: 'EXPLAIN', prompt: 'Explain the key concept I should understand here.' },
+  { key: 'practice', label: 'Practice', mode: 'PRACTICE', prompt: 'Give me a practice question based on this material.' },
+  { key: 'hint', label: 'Hint', mode: 'HINT', prompt: 'Give me a hint about this — without the answer.' },
+  { key: 'review', label: 'Review', mode: 'REVIEW', prompt: 'What should I review here, based on my progress?' },
 ]
 
 // Coach-oriented prompts, answered from the learner's live progress data.
@@ -191,9 +193,11 @@ export default function ChatAssistant({
     return () => window.removeEventListener('keydown', onKey)
   }, [open, onClose])
 
-  // Send a message (or a one-tap quick-action prompt) and fetch the AI reply.
+  // Send a message (or a one-tap mode prompt) and fetch the tutor's reply.
+  // `mode` is an explicit tutor mode from a mode chip, or 'AUTO' when the
+  // learner types a free question (the tutor then classifies the intent).
   const send = useCallback(
-    async (preset) => {
+    async (preset, mode = 'AUTO') => {
       const text = (preset ?? input).trim()
       if (!text || busy) return
       const prior = messages
@@ -231,18 +235,20 @@ export default function ChatAssistant({
       setBusy(true)
       setTyping(true)
       try {
-        const reply = await answerAssistant({
+        const reply = await askTutor({
           question: text,
+          mode,
           deck,
+          sets,
+          stats,
           history: prior,
           settings,
           user,
-          coach: briefing,
           signal,
           onToken,
         })
         if (signal.aborted) return // superseded — drop the result, don't persist
-        // answerAssistant returns { text, sources, grounded }; tolerate a bare
+        // askTutor returns { text, sources, grounded, ... }; tolerate a bare
         // string too so nothing breaks if that contract ever changes.
         const replyText = typeof reply === 'string' ? reply : reply?.text || ''
         const finalMsg = {
@@ -274,7 +280,7 @@ export default function ChatAssistant({
         }
       }
     },
-    [input, busy, messages, deck, settings, user, briefing, persist],
+    [input, busy, messages, deck, sets, stats, settings, user, persist],
   )
 
   // Act on a recommendation card: jump to the recommended deck + study mode and
@@ -435,14 +441,15 @@ export default function ChatAssistant({
         </div>
 
         {messages.length > 0 && (
-          <div className="chat-actions" role="group" aria-label="Quick study prompts">
-            {QUICK_ACTIONS.map((a) => (
+          <div className="chat-actions" role="group" aria-label="Tutor modes">
+            {TUTOR_MODES.map((a) => (
               <button
                 key={a.key}
                 type="button"
                 className="chat-chip"
-                onClick={() => send(a.prompt)}
+                onClick={() => send(input.trim() ? input : a.prompt, a.mode)}
                 disabled={busy}
+                title={`${a.label} — ${a.mode.toLowerCase()} mode`}
               >
                 {a.label}
               </button>

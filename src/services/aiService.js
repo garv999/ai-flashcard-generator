@@ -587,6 +587,41 @@ export async function answerAssistant({ question, deck, history = [], settings, 
   return { text, sources, grounded }
 }
 
+// ---------------------------------------------------------------------------
+// Reusable seams for the Adaptive Tutor (src/services/tutor/*).
+//
+// These expose the exact provider/streaming/citation primitives answerAssistant
+// uses, so the tutor orchestrator can reuse them rather than duplicate the AI
+// provider abstraction or the RAG citation logic. Purely additive — nothing
+// here changes existing behavior.
+// ---------------------------------------------------------------------------
+
+// Run one chat completion against the configured provider. Returns the answer
+// text (streamed through onToken when given), or null in Demo mode — the caller
+// then supplies its own deterministic offline answer. Mirrors the provider
+// dispatch inside answerAssistant, including Anthropic's user-first requirement.
+export async function runChat({ system, messages, settings, signal, onToken } = {}) {
+  const provider = settings?.provider || 'demo'
+  if (provider === 'openai') return openaiChat(system, messages, { signal, onToken })
+  if (provider === 'anthropic') {
+    const trimmed = [...messages]
+    while (trimmed.length && trimmed[0].role !== 'user') trimmed.shift()
+    return anthropicChat(system, trimmed, { signal, onToken })
+  }
+  return null // Demo mode — offline, no provider to call.
+}
+
+// Exposed so the tutor reuses identical citation, retrieval-query and streaming
+// behavior (and the same abort semantics) as the classic assistant.
+export {
+  buildSources,
+  buildRetrievalQuery,
+  rankCards,
+  streamOut as streamText,
+  delay as demoDelay,
+  throwIfAborted,
+}
+
 // Compose the full Demo-mode answer (offline). Split out so it can be streamed.
 function demoAnswer(q, deck, coach, retrieved) {
   if (coach && isCoachingQuestion(q)) return coachReply(q, coach)
