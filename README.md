@@ -2,9 +2,12 @@
 
 An AI-powered study platform that turns any topic (or an uploaded PDF) into a
 study-ready deck of flashcards, then helps you actually learn the material with
-spaced repetition, quizzes, a personalized study plan, an AI study coach, and a
-learning-intelligence dashboard. It works instantly in the browser with no
-account required, and optionally syncs to the cloud when you sign in.
+spaced repetition, quizzes, a personalized study plan, semantic search, and an
+adaptive AI tutor. On top of that sits a real learning-intelligence layer: an
+on-device machine-learning model that predicts which cards you are about to
+forget, and a recommendation engine that ranks what to study next. It works
+instantly in the browser with no account required, and optionally syncs to the
+cloud when you sign in.
 
 ![React](https://img.shields.io/badge/React-18-61dafb?logo=react&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-5-646cff?logo=vite&logoColor=white)
@@ -27,19 +30,24 @@ account required, and optionally syncs to the cloud when you sign in.
 - **Browse mode:** flip through cards with a 3D animation and a deck progress bar.
 - **Review mode (spaced repetition):** an Anki-style SM-2 scheduler (`Again / Hard / Good / Easy`) shows the right cards at the right time and tracks due counts.
 - **Quiz mode:** auto-generated multiple-choice questions with instant feedback, a scored results screen, and retry-incorrect / restart options. Best score and last attempt persist per deck.
-- **Personalized study plan:** set a target date, daily study time, and confidence level to get an adaptive day-by-day roadmap (new cards + reviews per day, milestones, projected finish) that updates as you study.
+- **Personalized study plan:** set a target date, daily study time, and confidence level to get an adaptive day-by-day roadmap (new cards + reviews per day, milestones, projected finish) that updates as you study. A "Recommended next" panel ranks which of the deck's cards to review first.
+- **Semantic search:** search your whole library by meaning, not just keywords. Card embeddings are cached and reused, with a graceful fallback to keyword search when embeddings are unavailable. Works in both Demo mode and when signed in.
 
-### AI Study Coach
+### Adaptive AI Tutor
 
-- **Chat assistant per deck / PDF:** ask questions, get explanations, simplify topics, generate examples, compare concepts, or build mnemonics.
-- **Retrieval-Augmented Generation (RAG):** uploaded PDFs are chunked, embedded, and stored so the assistant answers from the **whole document**, not just the generated cards. Conversation history supports natural follow-ups.
-- **Progress-aware coaching:** the coach analyzes your spaced-repetition schedule, quiz results, analytics, and study plan to recommend what to study next, surface weak areas, estimate today's workload, and track exam/interview readiness.
-- **Visual learning:** when a concept is clearer shown visually, the assistant renders Mermaid **flowcharts, trees, timelines**, and **comparison tables**; simple questions stay as text.
+- **A tutor, not a chatbot:** the per-deck assistant detects your intent and adapts to what you already know. Modes include **Explain, Practice, Hint, Review, Misconception**, and **Recommend**, surfaced as one-tap controls in the chat.
+- **State-aware responses:** the tutor reads your real learning state (spaced-repetition maturity, historical accuracy, recently missed cards, mastered concepts) and pitches each answer accordingly. A new concept is explained from first principles; a mastered one gets a deeper, more concise treatment; a recently missed one gets a misconception check plus practice.
+- **Retrieval-Augmented Generation (RAG):** uploaded PDFs are chunked, embedded, and stored so the tutor answers from the **whole document**, not just the generated cards. Every document-grounded answer shows an "answer based on uploaded material" indicator plus expandable **Sources** with page and section citations, and it says so plainly when the material does not cover a question rather than inventing an answer.
+- **Recommendation-aware:** when you ask "what should I study next?", the recommendation engine ranks first and the tutor explains its ranked results, so guidance is grounded in your real data rather than guessed.
+- **Progress coaching:** analyzes your schedule, quiz results, analytics, and study plan to surface weak areas, estimate today's workload, and track exam or interview readiness.
+- **Visual learning:** when a concept is clearer shown visually, the tutor renders Mermaid **flowcharts, trees, timelines**, and **comparison tables**; simple questions stay as text.
 
 ### Learning Intelligence
 
-- **Dedicated insights dashboard:** mines spaced-repetition data, quiz performance, analytics, and AI interactions to detect **weak concepts**, identify **frequently forgotten** cards, **predict learning gaps**, rank **revision priorities**, **recommend additional flashcards**, and generate **personalized insights**, with one-click actions to review or generate.
-- **Study analytics:** streaks, retention, per-deck mastery, card-maturity breakdown, and a GitHub-style activity heatmap.
+- **Forgetting prediction (on-device ML):** a real, client-side machine-learning model (logistic regression, trained from scratch, no heavy ML dependency) estimates the probability that each card will be forgotten at its next review. It learns from your own review outcomes, which are logged locally as you study. Predictions carry a difficulty score, a confidence value, and human-readable reasons ("Long time since last review", "Low historical accuracy", "Few successful repetitions"). Until there is enough history to train, it falls back transparently to an SRS-based estimate and labels every prediction as **ML** or **SRS**. No learning data ever leaves your device.
+- **Learning recommendation engine:** a deterministic ranking system (not an LLM) that combines ten real signals (due status, forgetting probability, difficulty, historical accuracy, consecutive misses, quiz performance, recency, study-plan progress, topic weakness, and review urgency) into a normalized score for every card. It produces typed, explained recommendations ("Due today and high forgetting risk", "Frequently missed in recent reviews", "Part of today's study plan and currently weak"), aggregates them to topic-level priorities, and surfaces a "Recommended focus" section in Analytics and a "Recommended next" section in the study plan, each with a one-tap way to start studying.
+- **Insights dashboard:** mines spaced-repetition data, quiz performance, analytics, and AI interactions to detect **weak concepts**, identify **frequently forgotten** cards, **predict learning gaps**, rank **revision priorities**, **recommend additional flashcards**, and generate **personalized insights**, with one-click actions to review or generate.
+- **Study analytics:** streaks, retention, per-deck mastery, card-maturity breakdown, a GitHub-style activity heatmap, and a Learning Intelligence panel driven by real model output.
 
 ### Accounts & persistence
 
@@ -98,8 +106,9 @@ Demo mode.
 
 1. Enter a topic or upload a PDF; the app requests question-and-answer pairs and parses the JSON response (PDFs are chunked to stay within token limits).
 2. The deck is rendered and saved: to `localStorage` in Demo mode, or to Firestore when signed in.
-3. Study with Browse, Review (SRS), or Quiz; set a study plan; and open the coach to ask questions grounded in the deck or the full PDF.
-4. As you study, the analytics and Learning Intelligence dashboards recompute automatically from your live progress.
+3. Study with Browse, Review (SRS), or Quiz; set a study plan; search your library by meaning; and open the adaptive tutor to ask questions grounded in the deck or the full PDF.
+4. Every review is logged locally as a labeled training example. Once enough history accumulates, the on-device model trains and predicts forgetting probability per card; before then, an SRS-based estimate is used.
+5. The recommendation engine combines these signals with due status, quiz results, and study-plan progress to rank what to study next, and the analytics and Learning Intelligence dashboards recompute automatically from your live progress.
 
 ---
 
@@ -154,9 +163,22 @@ ai-flashcard-generator/
     │   ├── intelligence.js      # Learning-intelligence engine
     │   ├── diagrams.js          # Offline Mermaid / table generation
     │   ├── chunking.js  embeddings.js  retrieval.js   # RAG pipeline
+    │   ├── semanticSearch.js    # Vector search over the deck library
+    │   ├── tutor/               # Adaptive AI tutor (intent, state, context, prompt)
+    │   │   ├── intent.js  learningState.js  context.js
+    │   │   ├── prompt.js  demo.js  index.js
+    │   ├── ml/                  # Forgetting-prediction model (client-side ML)
+    │   │   ├── features.js      # Feature engineering + SRS fallback
+    │   │   ├── logistic.js      # Logistic regression (from scratch)
+    │   │   ├── dataset.js       # Review-event log + training data
+    │   │   ├── model.js         # Train / cache / version / persist
+    │   │   └── index.js         # Predictions + prioritization + analytics
+    │   ├── recommend/           # Learning recommendation engine
+    │   │   ├── signals.js  score.js  explain.js
+    │   │   ├── topics.js  index.js
     │   ├── chat.js  decks.js    # Conversation + deck persistence
     │   └── firebase.js          # Firebase Auth + Firestore init
-    ├── hooks/                   # Auth + scroll/animation hooks
+    ├── hooks/                   # Auth, scroll/animation, semantic-search hooks
     └── utils/                   # storage + auth-error helpers
 ```
 
@@ -170,6 +192,9 @@ ai-flashcard-generator/
 - **Firebase:** Google/email auth and Firestore cloud sync
 - **OpenAI / Anthropic APIs:** optional real generation, coaching, and embeddings
 - **RAG:** dependency-free chunking, embeddings (OpenAI `text-embedding-3-small` or a local hashing embedder), and cosine-similarity retrieval, stored quantized for efficiency
+- **Semantic search:** vector search over cards reusing the embedding stack, with a cached per-card index and keyword fallback
+- **Machine learning:** a from-scratch logistic-regression forgetting model (client-side, deterministic, no ML framework) with feature engineering, local training data, model caching, and an SRS fallback
+- **Recommendation engine:** a deterministic, signal-based ranking layer that composes SRS, the ML model, analytics, and the study plan into typed, explained study recommendations
 - **pdf.js:** in-browser PDF text extraction
 - **Mermaid** (lazy-loaded): flowchart / tree / timeline diagram rendering
 - **React Three Fiber + Drei:** the WebGL 3D hero

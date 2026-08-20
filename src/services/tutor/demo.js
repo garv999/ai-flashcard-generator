@@ -47,7 +47,7 @@ function levelLead(level, topic) {
 }
 
 // The main entry: compose an offline answer for a resolved mode.
-export function demoTutorAnswer({ mode, style, question, deck, retrieved, cards, state, focus, grounding }) {
+export function demoTutorAnswer({ mode, style, question, deck, retrieved, cards, state, focus, grounding, recommendations }) {
   const topic = deck?.topic || 'this deck'
   const passage = topPassage(retrieved, 3)
   const topCard = cards && cards.length ? cards[0] : null
@@ -62,7 +62,7 @@ export function demoTutorAnswer({ mode, style, question, deck, retrieved, cards,
 
   switch (mode) {
     case 'RECOMMEND':
-      return coachReply(question, state?.briefing)
+      return demoRecommend(question, recommendations, state)
 
     case 'HINT':
       return demoHint(topic, passage, topCard)
@@ -80,6 +80,24 @@ export function demoTutorAnswer({ mode, style, question, deck, retrieved, cards,
     default:
       return demoExplain({ style, topic, passage, topCard, focus })
   }
+}
+
+// RECOMMEND — explain the recommendation engine's ranked output (the engine
+// ranks; the tutor narrates). Falls back to the coach briefing if the engine
+// returned nothing (e.g. an empty library).
+function demoRecommend(question, rec, state) {
+  if (!rec?.cards?.length) return coachReply(question, state?.briefing)
+  const src = rec.source === 'ML' ? 'your personalized model' : 'your SRS schedule'
+  const lines = rec.cards.slice(0, 4).map((c, i) => `${i + 1}. ${c.question} — ${c.reason}`)
+  const topics = rec.topics.length
+    ? `\n\nBy topic: ${rec.topics.slice(0, 3).map((t) => `${t.topic} (${t.priority} priority, ${Math.round(t.avgForgetting * 100)}% risk)`).join('; ')}.`
+    : ''
+  return (
+    `Here's what to study next, ranked by ${src}:\n\n` +
+    lines.join('\n') +
+    topics +
+    `\n\nStart at the top — that's the highest-value review right now.`
+  )
 }
 
 // EXPLAIN — quote the material, pitched to the learner's level.

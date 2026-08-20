@@ -524,6 +524,10 @@ export default function App() {
           sets={sets}
           stats={stats}
           onClose={() => setShowAnalytics(false)}
+          onStudyDeck={(deckId) => {
+            setShowAnalytics(false)
+            handleCoachAction(deckId, 'review')
+          }}
         />
       )}
 

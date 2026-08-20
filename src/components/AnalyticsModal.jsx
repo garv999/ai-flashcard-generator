@@ -25,6 +25,7 @@ import {
   activitySeries,
 } from '../services/analytics.js'
 import { learningIntelligence } from '../services/ml/index.js'
+import { recommendNext } from '../services/recommend/index.js'
 
 const WEEKS = 13
 
@@ -222,7 +223,7 @@ function Legend({ segments, total }) {
   )
 }
 
-export default function AnalyticsModal({ sets, stats, onClose }) {
+export default function AnalyticsModal({ sets, stats, onClose, onStudyDeck }) {
   const closeRef = useRef(null)
   // Local view-only state: how many days the trend chart spans. Reads existing
   // data via activitySeries — no analytics calculations are changed.
@@ -267,6 +268,8 @@ export default function AnalyticsModal({ sets, stats, onClose }) {
 
   // Forgetting-prediction model output (real values; SRS fallback until trained).
   const li = useMemo(() => learningIntelligence({ sets, now }), [sets, now])
+  // Recommendation engine — top ranked cards to study next across all decks.
+  const rec = useMemo(() => recommendNext({ sets, stats, now, limit: 5 }), [sets, stats, now])
 
   const nothingYet = t.reviews === 0 && maturity.total === 0
 
@@ -515,6 +518,55 @@ export default function AnalyticsModal({ sets, stats, onClose }) {
                     </li>
                   ))}
                 </ul>
+              </section>
+            )}
+
+            {/* Recommended focus — recommendation engine's ranked next steps */}
+            {rec.cards.length > 0 && (
+              <section className="an-section an-rec">
+                <div className="an-section-head">
+                  <h3>
+                    <TargetIcon /> Recommended focus
+                  </h3>
+                  <span className={`an-ml-tag ${rec.source === 'SRS' ? 'an-ml-tag-srs' : ''}`}>
+                    {rec.source === 'ML' ? 'Model-ranked' : 'SRS-ranked'}
+                  </span>
+                </div>
+                <ul className="an-rec-list">
+                  {rec.cards.map((c) => (
+                    <li key={`${c.deckId}-${c.cardIndex}`} className="an-rec-item">
+                      <span className={`an-rec-badge an-rec-${c.type}`}>{c.typeLabel}</span>
+                      <span className="an-rec-body">
+                        <span className="an-rec-q" title={c.question}>
+                          {c.question}
+                        </span>
+                        <span className="an-rec-reason">
+                          {c.deckTopic} · {c.reason}
+                        </span>
+                      </span>
+                      {onStudyDeck && (
+                        <button
+                          type="button"
+                          className="an-rec-study"
+                          onClick={() => onStudyDeck(c.deckId)}
+                          title="Study this deck now"
+                        >
+                          Study
+                        </button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+                {rec.topics.length > 0 && (
+                  <div className="an-ml-topics">
+                    {rec.topics.slice(0, 4).map((tp) => (
+                      <span key={tp.deckId} className={`an-ml-topic an-rec-prio-${tp.priority}`}>
+                        {tp.topic}
+                        <span className="an-ml-topicrisk">{tp.priority}</span>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </section>
             )}
 

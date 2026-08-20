@@ -29,6 +29,7 @@ import { collectLearningState, focusLevel } from './learningState.js'
 import { gatherContext, groundingStatus } from './context.js'
 import { buildTutorSystem } from './prompt.js'
 import { demoTutorAnswer } from './demo.js'
+import { recommendNext } from '../recommend/index.js'
 
 const MAX_HISTORY = 12 // prior turns sent to the provider for follow-up context
 
@@ -71,6 +72,11 @@ export async function askTutor({
   // 2. Learner state (reuses the coach + intelligence brains).
   const state = collectLearningState({ deck, sets, stats, chats, now })
 
+  // For "what should I study?", the RECOMMENDATION ENGINE ranks first; the tutor
+  // only explains its ranked output (it never re-ranks). Computed only for the
+  // RECOMMEND mode to avoid unnecessary work on other turns.
+  const recommendations = resolvedMode === 'RECOMMEND' ? recommendNext({ sets, stats, now, limit: 6 }) : null
+
   // 3. Retrieval — enrich the query with recent context so follow-ups retrieve
   //    well (same heuristic the classic assistant uses).
   const query = buildRetrievalQuery(q, history)
@@ -105,6 +111,7 @@ export async function askTutor({
     state,
     grounding,
     cards,
+    recommendations,
   })
   const sourceHeading =
     retrieved?.mode === 'overview'
@@ -131,6 +138,7 @@ export async function askTutor({
       state,
       focus,
       grounding,
+      recommendations,
     })
     text = await streamText(answer, onToken, signal)
   }

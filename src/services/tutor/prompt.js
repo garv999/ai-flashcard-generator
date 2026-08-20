@@ -13,6 +13,7 @@
 
 import { coachContextText } from '../coach.js'
 import { flashcardBlock } from './context.js'
+import { recommendationContextText } from '../recommend/index.js'
 
 // How to pitch the answer given the learner's grasp of the concept (spec
 // §ADAPTIVE BEHAVIOR). Keyed by focusLevel().level.
@@ -84,7 +85,7 @@ function groundingRules(kind, hasDoc, grounding) {
 //   state      — from collectLearningState (for the snapshot + context blocks)
 //   grounding  — from groundingStatus
 //   cards      — semantic flashcard matches (for the flashcard block)
-export function buildTutorSystem({ deck, hasDoc, mode, style, focus, state, grounding, cards }) {
+export function buildTutorSystem({ deck, hasDoc, mode, style, focus, state, grounding, cards, recommendations }) {
   const topic = deck?.topic || 'the selected deck'
   const kind = deck?.source === 'pdf' ? 'uploaded PDF' : 'study deck'
 
@@ -100,10 +101,15 @@ export function buildTutorSystem({ deck, hasDoc, mode, style, focus, state, grou
   const adaptation = `LEARNER ADAPTATION: ${adaptationFor(focus?.level)}${focus?.concept ? ` Focused concept: "${focus.concept}".` : ''}`
   const modeText = modeClause(mode, style)
 
-  // Context blocks.
+  // Context blocks. For RECOMMEND, append the recommendation engine's ranked
+  // output so the tutor explains it rather than inventing its own ranking.
+  const recBlock =
+    mode === 'RECOMMEND' && recommendations?.cards?.length
+      ? `\n\n${recommendationContextText(recommendations)}`
+      : ''
   const snapshot = state?.briefing
-    ? `STUDENT PROGRESS SNAPSHOT:\n${coachContextText(state.briefing)}\n${learnerConceptLines(state)}`
-    : ''
+    ? `STUDENT PROGRESS SNAPSHOT:\n${coachContextText(state.briefing)}\n${learnerConceptLines(state)}${recBlock}`
+    : recBlock
   const cardBlock = flashcardBlock(cards)
 
   return {

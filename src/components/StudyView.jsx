@@ -159,6 +159,7 @@ export default function StudyView({
           deck={set}
           onSave={(config) => onSavePlan(set.id, config)}
           onReset={() => onSavePlan(set.id, null)}
+          onStudy={() => setMode('review')}
         />
       ) : (
         <>
