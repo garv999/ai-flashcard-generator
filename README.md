@@ -1,13 +1,10 @@
 # AI Flashcard Generator
 
-An AI-powered study platform that turns any topic (or an uploaded PDF) into a
-study-ready deck of flashcards, then helps you actually learn the material with
-spaced repetition, quizzes, a personalized study plan, semantic search, and an
-adaptive AI tutor. On top of that sits a real learning-intelligence layer: an
-on-device machine-learning model that predicts which cards you are about to
-forget, and a recommendation engine that ranks what to study next. It works
-instantly in the browser with no account required, and optionally syncs to the
-cloud when you sign in.
+Turn any topic or PDF into a flashcard deck, then learn it with spaced
+repetition, quizzes, a study plan, semantic search, and an adaptive AI tutor. An
+on-device ML model predicts which cards you are about to forget, and a
+recommendation engine ranks what to study next. Runs instantly in the browser
+with no account, and syncs to the cloud when you sign in.
 
 ![React](https://img.shields.io/badge/React-18-61dafb?logo=react&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-5-646cff?logo=vite&logoColor=white)
@@ -18,107 +15,42 @@ cloud when you sign in.
 
 ## Features
 
-### Generate
+**Generate**
+- Topic to deck on demand, or from a PDF (up to 20 MB, text extracted in-browser).
+- Works offline in Demo mode with no API key; switch to OpenAI or Claude in Settings (keys stay server-side).
 
-- **Real-time AI generation:** enter a topic and receive a full deck on demand, with a skeleton loading state and clear error handling.
-- **Generate from a PDF:** drop in a PDF (up to 20 MB), pick a page range, and turn its contents into flashcards. Text is extracted in the browser with `pdf.js`.
-- **Works out of the box (Demo mode):** a built-in, offline mock generator means the app runs instantly with no API key.
-- **Real AI when you want it:** switch to OpenAI (`gpt-4o-mini`) or Anthropic Claude (`claude-sonnet-5`) in Settings. Provider keys live server-side behind a proxy and never reach the browser.
+**Study**
+- Browse, SM-2 spaced repetition (`Again / Hard / Good / Easy`), and auto-generated multiple-choice quizzes.
+- Personalized study plan with a "Recommended next" panel.
+- Semantic search across your whole library, with keyword fallback.
 
-### Study
+**Adaptive AI Tutor**
+- Per-deck tutor with Explain, Practice, Hint, Review, Misconception, and Recommend modes that adapt to what you already know.
+- RAG over uploaded PDFs: answers cite page and section, and say so plainly when the material does not cover a question.
+- Renders Mermaid diagrams and tables when a concept is clearer visually.
 
-- **Browse mode:** flip through cards with a 3D animation and a deck progress bar.
-- **Review mode (spaced repetition):** an Anki-style SM-2 scheduler (`Again / Hard / Good / Easy`) shows the right cards at the right time and tracks due counts.
-- **Quiz mode:** auto-generated multiple-choice questions with instant feedback, a scored results screen, and retry-incorrect / restart options. Best score and last attempt persist per deck.
-- **Personalized study plan:** set a target date, daily study time, and confidence level to get an adaptive day-by-day roadmap (new cards + reviews per day, milestones, projected finish) that updates as you study. A "Recommended next" panel ranks which of the deck's cards to review first.
-- **Semantic search:** search your whole library by meaning, not just keywords. Card embeddings are cached and reused, with a graceful fallback to keyword search when embeddings are unavailable. Works in both Demo mode and when signed in.
+**Learning Intelligence**
+- On-device ML (logistic regression, no ML framework) predicts each card's forgetting probability with reasons, learning from your own reviews. Falls back to an SRS estimate and labels every prediction ML or SRS. No learning data leaves your device.
+- Recommendation engine ranks what to study next from ten real signals, with typed reasons, surfaced in Analytics and the study plan.
+- Analytics: streaks, retention, mastery, activity heatmap, and weak-concept insights.
 
-### Adaptive AI Tutor
-
-- **A tutor, not a chatbot:** the per-deck assistant detects your intent and adapts to what you already know. Modes include **Explain, Practice, Hint, Review, Misconception**, and **Recommend**, surfaced as one-tap controls in the chat.
-- **State-aware responses:** the tutor reads your real learning state (spaced-repetition maturity, historical accuracy, recently missed cards, mastered concepts) and pitches each answer accordingly. A new concept is explained from first principles; a mastered one gets a deeper, more concise treatment; a recently missed one gets a misconception check plus practice.
-- **Retrieval-Augmented Generation (RAG):** uploaded PDFs are chunked, embedded, and stored so the tutor answers from the **whole document**, not just the generated cards. Every document-grounded answer shows an "answer based on uploaded material" indicator plus expandable **Sources** with page and section citations, and it says so plainly when the material does not cover a question rather than inventing an answer.
-- **Recommendation-aware:** when you ask "what should I study next?", the recommendation engine ranks first and the tutor explains its ranked results, so guidance is grounded in your real data rather than guessed.
-- **Progress coaching:** analyzes your schedule, quiz results, analytics, and study plan to surface weak areas, estimate today's workload, and track exam or interview readiness.
-- **Visual learning:** when a concept is clearer shown visually, the tutor renders Mermaid **flowcharts, trees, timelines**, and **comparison tables**; simple questions stay as text.
-
-### Learning Intelligence
-
-- **Forgetting prediction (on-device ML):** a real, client-side machine-learning model (logistic regression, trained from scratch, no heavy ML dependency) estimates the probability that each card will be forgotten at its next review. It learns from your own review outcomes, which are logged locally as you study. Predictions carry a difficulty score, a confidence value, and human-readable reasons ("Long time since last review", "Low historical accuracy", "Few successful repetitions"). Until there is enough history to train, it falls back transparently to an SRS-based estimate and labels every prediction as **ML** or **SRS**. No learning data ever leaves your device.
-- **Learning recommendation engine:** a deterministic ranking system (not an LLM) that combines ten real signals (due status, forgetting probability, difficulty, historical accuracy, consecutive misses, quiz performance, recency, study-plan progress, topic weakness, and review urgency) into a normalized score for every card. It produces typed, explained recommendations ("Due today and high forgetting risk", "Frequently missed in recent reviews", "Part of today's study plan and currently weak"), aggregates them to topic-level priorities, and surfaces a "Recommended focus" section in Analytics and a "Recommended next" section in the study plan, each with a one-tap way to start studying.
-- **Insights dashboard:** mines spaced-repetition data, quiz performance, analytics, and AI interactions to detect **weak concepts**, identify **frequently forgotten** cards, **predict learning gaps**, rank **revision priorities**, **recommend additional flashcards**, and generate **personalized insights**, with one-click actions to review or generate.
-- **Study analytics:** streaks, retention, per-deck mastery, card-maturity breakdown, a GitHub-style activity heatmap, and a Learning Intelligence panel driven by real model output.
-
-### Accounts & persistence
-
-- **Demo mode:** decks, progress, quizzes, plans, chats, and retrieval indexes are all saved in the browser's `localStorage`.
-- **Sign in to sync:** Google or email/password auth (Firebase). Signed-in data lives in Firestore and syncs across devices in real time; local Demo data migrates on first sign-in.
-
-### Experience
-
-- **Cinematic 3D hero:** a WebGL iPhone (React Three Fiber) that rotates on scroll, with a graphite/titanium design system.
-- **Premium, responsive dark UI:** token-based design, custom SVG iconography, smooth scrolling, and polished micro-interactions from desktop down to mobile.
+**Accounts**
+- Demo mode saves everything in `localStorage`; sign in (Google or email) to sync via Firestore.
 
 ---
 
 ## Getting Started
 
 ```bash
-# 1. Install dependencies
 npm install
-
-# 2. Start the development server
 npm run dev
 ```
 
-Then open the URL Vite prints (default: http://localhost:5173). The app opens in
-**Demo mode** and works immediately, with no key and no account required.
+Opens in Demo mode (default http://localhost:5173) with no key or account needed.
 
-### Using a Real AI Provider (Optional)
+**Real AI (optional):** copy `.env.example` to `.env`, set `OPENAI_API_KEY` and/or `ANTHROPIC_API_KEY` (no `VITE_` prefix), then pick the provider in Settings. Calls are proxied through `api/ai.js`, so keys never reach the browser.
 
-Provider keys live **server-side** and are never exposed to the browser. Every
-OpenAI/Anthropic call (generation, the study coach, and PDF embeddings) is
-proxied through a small serverless function (`api/ai.js`) that injects the key
-from an environment variable.
-
-1. Copy `.env.example` to `.env` and set `OPENAI_API_KEY` and/or `ANTHROPIC_API_KEY`.
-   Do **not** add a `VITE_` prefix, so the keys stay out of the client bundle.
-2. Run `npm run dev` (Vite mounts the proxy locally) or deploy to a host that runs
-   `api/` as serverless functions (e.g. Vercel), setting the same env vars there.
-3. In the app, open Settings and choose OpenAI or Claude. Providers without a
-   server-side key show as "Not configured on server".
-
-> **Security note:** The browser only ever talks to the app's own `/api/ai`
-> endpoint. The key is injected server-side and is never present in the client
-> bundle, `localStorage`, or any outbound browser request. Never commit a real
-> key; `.env` is gitignored.
-
-### Enabling Cloud Sync (Optional)
-
-Sign-in and cross-device sync use Firebase. Copy `.env.example` to `.env` and fill
-in your Firebase project values (`VITE_FIREBASE_*`), then deploy the Firestore
-security rules in `firestore.rules`. Without these, the app still runs fully in
-Demo mode.
-
----
-
-## How It Works
-
-1. Enter a topic or upload a PDF; the app requests question-and-answer pairs and parses the JSON response (PDFs are chunked to stay within token limits).
-2. The deck is rendered and saved: to `localStorage` in Demo mode, or to Firestore when signed in.
-3. Study with Browse, Review (SRS), or Quiz; set a study plan; search your library by meaning; and open the adaptive tutor to ask questions grounded in the deck or the full PDF.
-4. Every review is logged locally as a labeled training example. Once enough history accumulates, the on-device model trains and predicts forgetting probability per card; before then, an SRS-based estimate is used.
-5. The recommendation engine combines these signals with due status, quiz results, and study-plan progress to rank what to study next, and the analytics and Learning Intelligence dashboards recompute automatically from your live progress.
-
----
-
-## Accessibility
-
-- **Keyboard navigation:** arrow keys move between cards; number/letter keys answer quizzes; Enter/Space advance.
-- **Visible focus rings** on every interactive element via `:focus-visible`.
-- **ARIA semantics:** labelled controls, `progressbar` elements, `role="alert"` errors, and `aria-live` regions.
-- **Accessible dialogs:** modals and the coach drawer use `role="dialog"`/`aria-modal`, move focus on open, and close on Escape.
-- **Reduced motion:** animations are minimised when `prefers-reduced-motion` is set.
+**Cloud sync (optional):** set the `VITE_FIREBASE_*` values in `.env` and deploy `firestore.rules`. Without them, the app runs fully in Demo mode.
 
 ---
 
@@ -186,30 +118,16 @@ ai-flashcard-generator/
 
 ## Tech Stack
 
-- **React 18** (Hooks): component-driven, real-time UI
-- **Vite 5:** fast dev server and build tooling
-- **Serverless proxy** (`api/ai.js`): keeps provider keys server-side, out of the browser
-- **Firebase:** Google/email auth and Firestore cloud sync
-- **OpenAI / Anthropic APIs:** optional real generation, coaching, and embeddings
-- **RAG:** dependency-free chunking, embeddings (OpenAI `text-embedding-3-small` or a local hashing embedder), and cosine-similarity retrieval, stored quantized for efficiency
-- **Semantic search:** vector search over cards reusing the embedding stack, with a cached per-card index and keyword fallback
-- **Machine learning:** a from-scratch logistic-regression forgetting model (client-side, deterministic, no ML framework) with feature engineering, local training data, model caching, and an SRS fallback
-- **Recommendation engine:** a deterministic, signal-based ranking layer that composes SRS, the ML model, analytics, and the study plan into typed, explained study recommendations
-- **pdf.js:** in-browser PDF text extraction
-- **Mermaid** (lazy-loaded): flowchart / tree / timeline diagram rendering
-- **React Three Fiber + Drei:** the WebGL 3D hero
-- **GSAP + Lenis:** scroll-driven animation and smooth scrolling
-- **Plain CSS:** a token-based design system with no UI framework
-- **Inline SVG icons:** dependency-free, no icon library
+React 18 and Vite 5 on the front end; Firebase (Google/email auth + Firestore
+sync); optional OpenAI/Anthropic generation via a serverless proxy that keeps
+keys server-side. RAG and semantic search use a dependency-free embedding and
+cosine-retrieval stack; the forgetting model is a from-scratch, client-side
+logistic regression; the recommendation engine is a deterministic signal-based
+ranker. Also pdf.js, Mermaid, React Three Fiber, GSAP + Lenis, and a plain-CSS
+design system with inline SVG icons.
 
----
-
-## Future Improvements
-
-- **Edit and reorder cards** after generation.
-- **Export and import** decks (JSON, CSV, Anki).
-- **Streaming responses** so cards appear progressively as they generate.
-- **Shared/collaborative decks** across users.
+Accessible by default: keyboard navigation, visible focus rings, ARIA semantics,
+focus-managed dialogs, and reduced-motion support.
 
 ---
 
