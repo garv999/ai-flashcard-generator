@@ -15,6 +15,7 @@ import LearningIntelligenceModal from './components/LearningIntelligenceModal.js
 import { AlertIcon, LogInIcon, CloseIcon } from './components/Icons.jsx'
 import { generateFlashcards, generateFlashcardsFromContent } from './services/aiService.js'
 import { schedule } from './services/srs.js'
+import { recordReviewEvent } from './services/ml/index.js'
 import { foldQuizResult } from './services/quiz.js'
 import {
   loadLocalChats,
@@ -277,6 +278,15 @@ export default function App() {
     const now = Date.now()
     const deck = sets.find((d) => d.id === deckId)
     if (!deck || !deck.cards[cardIndex]) return
+    // Log this review as a labeled training example for the forgetting model —
+    // features come from the card's state BEFORE scheduling, the label from the
+    // rating (Again ⇒ forgotten). Device-local only; best-effort so a failure
+    // here can never affect the review itself.
+    try {
+      recordReviewEvent({ deckId, cardIndex, card: deck.cards[cardIndex], rating, now })
+    } catch (err) {
+      console.warn('[Flashcards] ML review-log skipped:', err?.message || err)
+    }
     const cards = deck.cards.map((c, i) =>
       i === cardIndex ? { ...c, srs: schedule(c, rating, now) } : c,
     )

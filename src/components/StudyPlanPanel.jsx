@@ -7,6 +7,7 @@ import {
   CONFIDENCE_LEVELS,
   DAILY_TIME_OPTIONS,
 } from '../services/studyPlan.js'
+import { prioritizeCards } from '../services/ml/index.js'
 import {
   RouteIcon,
   CalendarIcon,
@@ -183,8 +184,12 @@ function PlanSetup({ deck, initial, onSubmit, onCancel }) {
   )
 }
 
+// Risk bucket for a forgetting probability (drives the badge color).
+const riskBucket = (p) => (p >= 0.6 ? 'high' : p >= 0.35 ? 'med' : 'low')
+
 // --- Dashboard ------------------------------------------------------------
-function PlanDashboard({ plan, onEdit, onReset }) {
+function PlanDashboard({ plan, priorities = [], onEdit, onReset }) {
+  const prioritySource = priorities[0]?.source // 'model' | 'srs'
   const status = STATUS_COPY[plan.status] || STATUS_COPY['on-track']
   const today = plan.today
   const daysLeftLabel = plan.past
@@ -276,6 +281,44 @@ function PlanDashboard({ plan, onEdit, onReset }) {
         </div>
       </div>
 
+      {/* ML-enhanced priority — which cards to review first */}
+      {priorities.length > 0 && (
+        <div className="plan-section plan-priority">
+          <h4 className="plan-section-title">
+            Focus first
+            <span
+              className={`plan-ml-tag ${prioritySource === 'srs' ? 'plan-ml-tag-srs' : ''}`}
+              title={
+                prioritySource === 'model'
+                  ? 'Ranked by the personalized forgetting-prediction model'
+                  : 'Ranked by SRS difficulty until the model has enough history to train'
+              }
+            >
+              {prioritySource === 'model' ? 'ML' : 'SRS'}
+            </span>
+          </h4>
+          <ul className="plan-priority-list">
+            {priorities.map((c) => (
+              <li key={c.cardIndex} className="plan-priority-item">
+                <span
+                  className={`plan-risk plan-risk-${riskBucket(c.forgettingProbability)}`}
+                  title="Estimated chance of forgetting at the next review"
+                >
+                  {Math.round(c.forgettingProbability * 100)}%
+                </span>
+                <span className="plan-priority-body">
+                  <span className="plan-priority-q">{c.question}</span>
+                  <span className="plan-priority-reason">
+                    {c.reasons[0]}
+                    {c.due ? ' · due now' : ''}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* Stat tiles */}
       <div className="plan-tiles">
         <StatTile icon={<CalendarIcon />} value={daysLeftLabel} label="Until target" />
@@ -361,6 +404,14 @@ export default function StudyPlanPanel({ deck, onSave, onReset }) {
   // Recompute from live card state on every mount / deck change.
   const plan = useMemo(() => buildPlan(deck, config, Date.now()), [deck, config])
 
+  // ML-enhanced priority: rank the deck's cards by due status + forgetting
+  // probability + intrinsic difficulty. This ENHANCES the SRS plan (it never
+  // reschedules). Show only cards worth surfacing (due, or elevated risk).
+  const priorities = useMemo(() => {
+    const ranked = prioritizeCards({ deck, now: Date.now() })
+    return ranked.filter((c) => c.due || c.forgettingProbability >= 0.5).slice(0, 4)
+  }, [deck])
+
   const handleSubmit = useCallback(
     (cfg) => {
       onSave(cfg)
@@ -397,5 +448,12 @@ export default function StudyPlanPanel({ deck, onSave, onReset }) {
     )
   }
 
-  return <PlanDashboard plan={plan} onEdit={() => setEditing(true)} onReset={handleReset} />
+  return (
+    <PlanDashboard
+      plan={plan}
+      priorities={priorities}
+      onEdit={() => setEditing(true)}
+      onReset={handleReset}
+    />
+  )
 }

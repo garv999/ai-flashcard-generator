@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   CloseIcon,
   FlameIcon,
@@ -24,6 +24,7 @@ import {
   quizStats,
   activitySeries,
 } from '../services/analytics.js'
+import { learningIntelligence } from '../services/ml/index.js'
 
 const WEEKS = 13
 
@@ -263,6 +264,9 @@ export default function AnalyticsModal({ sets, stats, onClose }) {
 
   const quiz = quizStats(sets)
   const series = activitySeries(stats, range, now)
+
+  // Forgetting-prediction model output (real values; SRS fallback until trained).
+  const li = useMemo(() => learningIntelligence({ sets, now }), [sets, now])
 
   const nothingYet = t.reviews === 0 && maturity.total === 0
 
@@ -513,6 +517,74 @@ export default function AnalyticsModal({ sets, stats, onClose }) {
                 </ul>
               </section>
             )}
+
+            {/* Learning intelligence — forgetting-prediction model output */}
+            <section className="an-section an-ml">
+              <div className="an-section-head">
+                <h3>
+                  <SparklesIcon /> Learning intelligence
+                </h3>
+                <span className={`an-ml-tag ${li.available ? '' : 'an-ml-tag-srs'}`}>
+                  {li.available ? `Model v${li.modelVersion}` : 'SRS estimate'}
+                </span>
+              </div>
+
+              {!li.available && <p className="an-ml-note">{li.message}</p>}
+
+              <div className="an-ml-stats">
+                <StatTile
+                  icon={<TargetIcon />}
+                  value={li.highRiskCount}
+                  label="Cards at high forgetting risk"
+                  accent="again"
+                />
+                <StatTile
+                  icon={<ChartIcon />}
+                  value={`${Math.round(li.avgForgetting * 100)}%`}
+                  label="Avg predicted forgetting"
+                />
+                <StatTile
+                  icon={<LayersIcon />}
+                  value={`${li.coverage}/${li.total}`}
+                  label="Cards with enough history"
+                />
+              </div>
+
+              {li.available && li.valAccuracy != null && (
+                <p className="an-ml-note">
+                  Validation accuracy {Math.round(li.valAccuracy * 100)}% on held-out reviews (n={li.n}).
+                </p>
+              )}
+
+              {li.highRisk.length > 0 && (
+                <ul className="an-ml-risklist">
+                  {li.highRisk.slice(0, 5).map((c) => (
+                    <li key={`${c.deckId}-${c.cardIndex}`} className="an-ml-riskitem">
+                      <span className="an-ml-riskpct">{Math.round(c.forgettingProbability * 100)}%</span>
+                      <span className="an-ml-riskbody">
+                        <span className="an-ml-riskq" title={c.question}>
+                          {c.question}
+                        </span>
+                        <span className="an-ml-riskreason">
+                          {c.deckTopic} · {c.reasons[0]}
+                        </span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {li.highRiskTopics.length > 0 && (
+                <div className="an-ml-topics">
+                  {li.highRiskTopics.slice(0, 4).map((tp) => (
+                    <span key={tp.deckId} className="an-ml-topic">
+                      {tp.topic}
+                      <span className="an-ml-topicrisk">{Math.round(tp.avgRisk * 100)}%</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </section>
           </>
         )}
 

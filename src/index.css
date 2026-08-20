@@ -6146,3 +6146,155 @@ button.coach-rec:active {
   line-height: 1.45;
   color: var(--text-muted);
 }
+
+/* ---------------------------------------------------------------------------
+   Learning-intelligence / forgetting-model UI (Study Plan + Analytics).
+   Reuses existing tokens and rating colors; no new visual system.
+--------------------------------------------------------------------------- */
+/* Small "ML" / "SRS" provenance tag next to a section title. */
+.plan-ml-tag,
+.an-ml-tag {
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  vertical-align: middle;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid var(--accent-ring);
+}
+.plan-ml-tag-srs,
+.an-ml-tag-srs {
+  background: var(--bg-elev-2);
+  color: var(--text-muted);
+  border-color: var(--border);
+}
+
+/* Study Plan — "Focus first" priority list. */
+.plan-priority-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.plan-priority-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.plan-risk {
+  flex: none;
+  min-width: 42px;
+  text-align: center;
+  padding: 3px 6px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--accent);
+}
+.plan-risk-high {
+  background: var(--danger);
+}
+.plan-risk-med {
+  background: #f0a34a;
+}
+.plan-risk-low {
+  background: var(--accent-2);
+}
+.plan-priority-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.plan-priority-q {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.plan-priority-reason {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+/* Analytics — Learning intelligence section. */
+.an-ml-note {
+  margin: 6px 0 10px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+.an-ml-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 10px 0;
+}
+.an-ml-risklist {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.an-ml-riskitem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.an-ml-riskpct {
+  flex: none;
+  min-width: 44px;
+  text-align: center;
+  padding: 3px 6px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--danger);
+}
+.an-ml-riskbody {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.an-ml-riskq {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.an-ml-riskreason {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+.an-ml-topics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.an-ml-topic {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  background: var(--bg-elev-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+.an-ml-topicrisk {
+  font-weight: 700;
+  color: var(--danger);
+}
