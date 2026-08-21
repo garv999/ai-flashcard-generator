@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import {
   buildPlan,
   validatePlanConfig,
@@ -8,6 +8,10 @@ import {
   DAILY_TIME_OPTIONS,
 } from '../services/studyPlan.js'
 import { recommendNext } from '../services/recommend/index.js'
+import {
+  recordRecommendationImpression,
+  recordRecommendationAccepted,
+} from '../services/ml/evaluation/index.js'
 import {
   RouteIcon,
   CalendarIcon,
@@ -420,6 +424,27 @@ export default function StudyPlanPanel({ deck, onSave, onReset, onStudy }) {
     [deck],
   )
 
+  // Log an impression when a non-empty recommendation is shown (for the observed
+  // acceptance rate), and record acceptance when the learner acts on it.
+  useEffect(() => {
+    if (recommendation?.cards?.length) {
+      try {
+        recordRecommendationImpression({ surface: 'plan', deckId: deck.id })
+      } catch {
+        /* best-effort */
+      }
+    }
+  }, [deck.id, recommendation])
+
+  const handleStudy = useCallback(() => {
+    try {
+      recordRecommendationAccepted({ recommendation, surface: 'plan', deckId: deck.id })
+    } catch {
+      /* best-effort */
+    }
+    onStudy?.()
+  }, [recommendation, deck.id, onStudy])
+
   const handleSubmit = useCallback(
     (cfg) => {
       onSave(cfg)
@@ -462,7 +487,7 @@ export default function StudyPlanPanel({ deck, onSave, onReset, onStudy }) {
       recommendation={recommendation}
       onEdit={() => setEditing(true)}
       onReset={handleReset}
-      onStudy={onStudy}
+      onStudy={handleStudy}
     />
   )
 }

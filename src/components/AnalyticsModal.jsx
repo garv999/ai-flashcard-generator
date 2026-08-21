@@ -26,6 +26,11 @@ import {
 } from '../services/analytics.js'
 import { learningIntelligence } from '../services/ml/index.js'
 import { recommendNext } from '../services/recommend/index.js'
+import {
+  evaluationReport,
+  recordRecommendationImpression,
+  recordRecommendationAccepted,
+} from '../services/ml/evaluation/index.js'
 
 const WEEKS = 13
 
@@ -270,6 +275,34 @@ export default function AnalyticsModal({ sets, stats, onClose, onStudyDeck }) {
   const li = useMemo(() => learningIntelligence({ sets, now }), [sets, now])
   // Recommendation engine — top ranked cards to study next across all decks.
   const rec = useMemo(() => recommendNext({ sets, stats, now, limit: 5 }), [sets, stats, now])
+  // Evaluation report — how the model and recommendations are performing against
+  // real outcomes. All sections gate themselves on sufficient data.
+  const evalReport = useMemo(() => evaluationReport({ now }), [now])
+
+  // Impression when a non-empty recommendation is shown (for acceptance rate).
+  useEffect(() => {
+    if (rec.cards.length) {
+      try {
+        recordRecommendationImpression({ surface: 'analytics' })
+      } catch {
+        /* best-effort */
+      }
+    }
+  }, [rec])
+
+  const acceptAndStudy = (deckId) => {
+    try {
+      recordRecommendationAccepted({ recommendation: rec, surface: 'analytics', deckId })
+    } catch {
+      /* best-effort */
+    }
+    onStudyDeck?.(deckId)
+  }
+
+  // Presentation formatters: never show misleading precision, and render an
+  // unavailable metric as "N/A" (distinct from a real 0).
+  const fmtPct = (v) => (v == null ? 'N/A' : `${Math.round(v * 100)}%`)
+  const fmtDec = (v) => (v == null ? 'N/A' : v.toFixed(2))
 
   const nothingYet = t.reviews === 0 && maturity.total === 0
 
@@ -548,7 +581,7 @@ export default function AnalyticsModal({ sets, stats, onClose, onStudyDeck }) {
                         <button
                           type="button"
                           className="an-rec-study"
-                          onClick={() => onStudyDeck(c.deckId)}
+                          onClick={() => acceptAndStudy(c.deckId)}
                           title="Study this deck now"
                         >
                           Study
@@ -636,6 +669,99 @@ export default function AnalyticsModal({ sets, stats, onClose, onStudyDeck }) {
                   ))}
                 </div>
               )}
+            </section>
+
+            {/* Model evaluation — measured against real review outcomes */}
+            <section className="an-section an-eval">
+              <div className="an-section-head">
+                <h3>
+                  <ChartIcon /> Model evaluation
+                </h3>
+                <span className="an-ml-tag an-ml-tag-srs">
+                  {evalReport.coverage.evaluatedPredictions} evaluated
+                </span>
+              </div>
+
+              {/* Model performance */}
+              {evalReport.modelPerformance.available ? (
+                <>
+                  <h4 className="an-eval-sub">
+                    Model performance
+                    {evalReport.modelPerformance.modelVersions?.length
+                      ? ` · model v${evalReport.modelPerformance.modelVersions.join(', v')}`
+                      : ''}
+                  </h4>
+                  <div className="an-ml-stats">
+                    <StatTile icon={<ChartIcon />} value={fmtDec(evalReport.modelPerformance.metrics.rocAuc)} label="ROC-AUC" />
+                    <StatTile icon={<ChartIcon />} value={fmtDec(evalReport.modelPerformance.metrics.prAuc)} label="PR-AUC" />
+                    <StatTile icon={<ChartIcon />} value={fmtPct(evalReport.modelPerformance.metrics.f1)} label="F1 score" />
+                    <StatTile icon={<ChartIcon />} value={fmtDec(evalReport.modelPerformance.metrics.brier)} label="Brier score" />
+                  </div>
+                </>
+              ) : (
+                <p className="an-ml-note">
+                  Not enough evaluation data yet ({evalReport.modelPerformance.n}/{evalReport.modelPerformance.min} predictions).
+                </p>
+              )}
+
+              {/* Calibration */}
+              {evalReport.calibration.available && (
+                <>
+                  <h4 className="an-eval-sub">Calibration (predicted vs observed forgetting)</h4>
+                  <ul className="an-cal">
+                    {evalReport.calibration.buckets.map((b) => (
+                      <li key={b.label} className="an-cal-row">
+                        <span className="an-cal-band">{b.label}</span>
+                        <span className="an-cal-track" title={`Avg predicted ${fmtPct(b.avgPredicted)}`}>
+                          <span className="an-cal-pred" style={{ width: `${(b.avgPredicted || 0) * 100}%` }} />
+                          {b.observedRate != null && (
+                            <span className="an-cal-obs" style={{ left: `${b.observedRate * 100}%` }} />
+                          )}
+                        </span>
+                        <span className="an-cal-num">
+                          {b.observedRate != null ? `${fmtPct(b.observedRate)} obs` : `${b.count} preds`}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+
+              {/* ML vs SRS */}
+              <h4 className="an-eval-sub">ML vs SRS</h4>
+              {evalReport.mlVsSrs.available ? (
+                <div className="an-eval-vs">
+                  <div className="an-eval-col">
+                    <span className="an-eval-col-h">ML</span> ROC-AUC {fmtDec(evalReport.mlVsSrs.ml.rocAuc)} · Brier{' '}
+                    {fmtDec(evalReport.mlVsSrs.ml.brier)}
+                  </div>
+                  <div className="an-eval-col">
+                    <span className="an-eval-col-h">SRS</span> ROC-AUC {fmtDec(evalReport.mlVsSrs.srs.rocAuc)} · Brier{' '}
+                    {fmtDec(evalReport.mlVsSrs.srs.brier)}
+                  </div>
+                </div>
+              ) : (
+                <p className="an-ml-note">{evalReport.mlVsSrs.message}</p>
+              )}
+
+              {/* Recommendation outcomes */}
+              <h4 className="an-eval-sub">Recommendation outcomes (observed)</h4>
+              {evalReport.recommendations.available ? (
+                <div className="an-ml-stats">
+                  <StatTile icon={<TargetIcon />} value={fmtPct(evalReport.recommendations.acceptanceRate)} label="Acceptance rate" />
+                  <StatTile icon={<CheckIcon />} value={fmtPct(evalReport.recommendations.observedSuccessRate)} label="Observed success" />
+                  <StatTile icon={<ChartIcon />} value={fmtPct(evalReport.recommendations.observedLapseRate)} label="Observed lapse" />
+                </div>
+              ) : (
+                <p className="an-ml-note">{evalReport.recommendations.message}</p>
+              )}
+
+              {/* Coverage */}
+              <p className="an-eval-cov">
+                {evalReport.coverage.evaluatedPredictions} predictions evaluated ·{' '}
+                {evalReport.coverage.totalReviewEvents} review events · ML coverage{' '}
+                {fmtPct(evalReport.coverage.mlCoverage)}
+              </p>
             </section>
           </>
         )}

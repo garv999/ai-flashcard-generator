@@ -16,6 +16,10 @@ import { AlertIcon, LogInIcon, CloseIcon } from './components/Icons.jsx'
 import { generateFlashcards, generateFlashcardsFromContent } from './services/aiService.js'
 import { schedule } from './services/srs.js'
 import { recordReviewEvent } from './services/ml/index.js'
+import {
+  recordReviewEvaluation,
+  attributeRecommendationOutcome,
+} from './services/ml/evaluation/index.js'
 import { foldQuizResult } from './services/quiz.js'
 import {
   loadLocalChats,
@@ -278,11 +282,18 @@ export default function App() {
     const now = Date.now()
     const deck = sets.find((d) => d.id === deckId)
     if (!deck || !deck.cards[cardIndex]) return
-    // Log this review as a labeled training example for the forgetting model —
-    // features come from the card's state BEFORE scheduling, the label from the
-    // rating (Again ⇒ forgotten). Device-local only; best-effort so a failure
-    // here can never affect the review itself.
+    // Log this review for the ML layer. Order matters and is deliberate:
+    //  1. Evaluate the model's STANDING prediction against this outcome, using a
+    //     model trained only on PRIOR reviews (prequential, leakage-free), before
+    //     the new training event is added.
+    //  2. Attribute the review to any pending recommendation (observed outcome).
+    //  3. Log the labeled training example for the forgetting model.
+    // Features come from the card's state BEFORE scheduling; the label is the
+    // rating (Again ⇒ forgotten). Device-local, best-effort: a failure here can
+    // never affect the review itself.
     try {
+      recordReviewEvaluation({ deckId, cardIndex, card: deck.cards[cardIndex], rating, now })
+      attributeRecommendationOutcome({ deckId, cardIndex, rating, now })
       recordReviewEvent({ deckId, cardIndex, card: deck.cards[cardIndex], rating, now })
     } catch (err) {
       console.warn('[Flashcards] ML review-log skipped:', err?.message || err)
