@@ -21,6 +21,7 @@ import {
   attributeRecommendationOutcome,
 } from './services/ml/evaluation/index.js'
 import { foldQuizResult } from './services/quiz.js'
+import { foldExamResult } from './services/exam/index.js'
 import {
   loadLocalChats,
   loadAllChats,
@@ -334,6 +335,25 @@ export default function App() {
     }
   }
 
+  // Persist a finished practice-exam attempt onto its deck (best + last). Rides
+  // the same deck-persistence path as quizzes; kept separate from SRS and the
+  // ML/evaluation logs by design (an exam never reschedules or trains).
+  async function handleSaveExamResult(deckId, attempt) {
+    const deck = sets.find((d) => d.id === deckId)
+    if (!deck) return
+    const exam = foldExamResult(deck.exam, attempt)
+    const updatedDeck = { ...deck, exam }
+    setSets((prev) => prev.map((d) => (d.id === deckId ? updatedDeck : d)))
+    if (user) {
+      try {
+        await saveDeck(user.uid, updatedDeck)
+      } catch (err) {
+        console.error('[Flashcards] Failed to save exam result:', err)
+        setCloudWarning(true)
+      }
+    }
+  }
+
   // Persist (or clear) a deck's study-plan config. Only the lightweight config
   // rides on the deck; the day-by-day schedule is derived live from card state.
   // Passing `config = null` removes the plan. Same persistence path as reviews.
@@ -508,6 +528,7 @@ export default function App() {
               stats={stats}
               onRate={handleRateCard}
               onSaveQuizResult={handleSaveQuizResult}
+              onSaveExamResult={handleSaveExamResult}
               onSavePlan={handleSavePlan}
               onCoachAction={handleCoachAction}
               coachNav={coachNav}

@@ -269,6 +269,18 @@ export default function AnalyticsModal({ sets, stats, onClose, onStudyDeck }) {
     .sort((a, b) => b.masteryPct - a.masteryPct)
 
   const quiz = quizStats(sets)
+  // Exam history per deck (best + last + high-risk accuracy). Reads deck.exam,
+  // written by the practice-exam feature; empty until an exam is taken.
+  const examRows = (sets || [])
+    .filter((d) => d.exam?.best)
+    .map((d) => ({
+      id: d.id,
+      topic: d.topic,
+      best: d.exam.best.pct,
+      last: d.exam.last?.pct ?? d.exam.best.pct,
+      weak: d.exam.last?.weakAccuracy ?? null,
+    }))
+    .sort((a, b) => b.best - a.best)
   const series = activitySeries(stats, range, now)
 
   // Forgetting-prediction model output (real values; SRS fallback until trained).
@@ -506,6 +518,34 @@ export default function AnalyticsModal({ sets, stats, onClose, onStudyDeck }) {
                 </>
               )}
             </section>
+
+            {/* Exam performance */}
+            {examRows.length > 0 && (
+              <section className="an-section">
+                <div className="an-section-head">
+                  <h3>Exam performance</h3>
+                </div>
+                <ul className="an-decks">
+                  {examRows.map((d) => (
+                    <li key={d.id} className="an-deck">
+                      <div className="an-deck-top">
+                        <span className="an-deck-topic" title={d.topic}>
+                          {d.topic}
+                        </span>
+                        <span className="an-deck-pct">{d.best}%</span>
+                      </div>
+                      <div className="an-deck-bar">
+                        <span className="an-deck-fill" style={{ width: `${d.best}%` }} />
+                      </div>
+                      <span className="an-deck-sub">
+                        Best {d.best}% · last {d.last}%
+                        {d.weak != null ? ` · high-risk items ${d.weak}%` : ''}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
 
             {/* Secondary summary */}
             <div className="an-summary">

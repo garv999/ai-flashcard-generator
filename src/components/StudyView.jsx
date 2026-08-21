@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import Flashcard from './Flashcard.jsx'
 import ReviewSession from './ReviewSession.jsx'
 import QuizSession from './QuizSession.jsx'
+import ExamSession from './ExamSession.jsx'
 import StudyPlanPanel from './StudyPlanPanel.jsx'
 import ChatAssistant from './ChatAssistant.jsx'
 import { ChevronLeftIcon, ChevronRightIcon, CardsIcon, MessageIcon } from './Icons.jsx'
@@ -13,6 +14,7 @@ export default function StudyView({
   stats,
   onRate,
   onSaveQuizResult,
+  onSaveExamResult,
   onSavePlan,
   onCoachAction,
   coachNav,
@@ -20,7 +22,7 @@ export default function StudyView({
   settings,
 }) {
   const [index, setIndex] = useState(0)
-  const [mode, setMode] = useState('browse') // 'browse' | 'review' | 'quiz' | 'plan'
+  const [mode, setMode] = useState('browse') // 'browse' | 'review' | 'quiz' | 'exam' | 'plan'
   const [chatOpen, setChatOpen] = useState(false)
   const lastNav = useRef(0)
 
@@ -122,6 +124,15 @@ export default function StudyView({
           <button
             type="button"
             role="tab"
+            aria-selected={mode === 'exam'}
+            className={`study-mode ${mode === 'exam' ? 'active' : ''}`}
+            onClick={() => setMode('exam')}
+          >
+            Exam
+          </button>
+          <button
+            type="button"
+            role="tab"
             aria-selected={mode === 'plan'}
             className={`study-mode ${mode === 'plan' ? 'active' : ''}`}
             onClick={() => setMode('plan')}
@@ -151,6 +162,16 @@ export default function StudyView({
           set={set}
           settings={settings}
           onSaveResult={onSaveQuizResult}
+          onExit={() => setMode('browse')}
+        />
+      ) : mode === 'exam' ? (
+        <ExamSession
+          key={set.id}
+          set={set}
+          stats={stats}
+          settings={settings}
+          user={user}
+          onSaveResult={onSaveExamResult}
           onExit={() => setMode('browse')}
         />
       ) : mode === 'plan' ? (
