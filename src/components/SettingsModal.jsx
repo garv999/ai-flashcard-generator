@@ -37,6 +37,10 @@ export default function SettingsModal({ settings, onSave, onClose }) {
     setDraft((d) => ({ ...d, ...patch }))
   }
 
+  // Fill percentage for the slider's progress track (presentational only —
+  // drives a CSS gradient; the value itself is unchanged).
+  const cardPct = Math.round(((Number(draft.cardCount) - 3) / (20 - 3)) * 100)
+
   function handleSave() {
     onSave(draft)
     onClose()
@@ -122,6 +126,7 @@ export default function SettingsModal({ settings, onSave, onClose }) {
                   min="3"
                   max="20"
                   value={draft.cardCount}
+                  style={{ '--range-pct': `${cardPct}%` }}
                   onChange={(e) => update({ cardCount: Number(e.target.value) })}
                 />
                 <span className="range-value" aria-live="polite">

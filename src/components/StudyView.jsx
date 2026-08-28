@@ -188,17 +188,16 @@ export default function StudyView({
             <span className="progress-pill">
               Card {index + 1} of {total}
             </span>
-          </div>
-
-          <div
-            className="progress-track"
-            role="progressbar"
-            aria-valuemin={1}
-            aria-valuemax={total}
-            aria-valuenow={index + 1}
-            aria-label="Deck progress"
-          >
-            <div className="progress-fill" style={{ width: `${progress}%` }} />
+            <div
+              className="progress-track"
+              role="progressbar"
+              aria-valuemin={1}
+              aria-valuemax={total}
+              aria-valuenow={index + 1}
+              aria-label="Deck progress"
+            >
+              <div className="progress-fill" style={{ width: `${progress}%` }} />
+            </div>
           </div>
 
           <Flashcard card={card} index={index} total={total} />

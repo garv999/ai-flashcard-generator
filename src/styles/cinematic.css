@@ -767,3 +767,32 @@
     animation: none;
   }
 }
+
+/* ============================================================
+   Hero mobile-fit polish (UI refinement — additive overrides).
+   On small screens the stacked text + phone exceeded the 100vh stage, so
+   `align-items: center` pushed the eyebrow up under the nav (clipping) and the
+   phone down into the scroll cue (overlap). Start the content below the nav and
+   size the phone so everything sits inside the fold. Desktop is untouched.
+   ============================================================ */
+@media (max-width: 900px) {
+  .cine-overlay {
+    align-content: start;
+    padding-top: clamp(78px, 11vh, 108px);
+    gap: clamp(12px, 3vw, 24px);
+  }
+  .cine-visual {
+    height: min(46vh, 420px);
+  }
+  .cine-sub {
+    margin-top: clamp(12px, 2vw, 20px);
+  }
+  .cine-cta {
+    margin-top: clamp(18px, 3vw, 30px);
+  }
+}
+@media (max-width: 560px) {
+  .cine-visual {
+    height: 40vh;
+  }
+}

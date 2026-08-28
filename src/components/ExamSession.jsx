@@ -314,6 +314,7 @@ export default function ExamSession({ set, stats, settings, user, onSaveResult, 
 
         {/* Predicted vs observed: how the exam did across forgetting-risk bands */}
         <div className="exam-bands">
+          <h4 className="exam-bands-title">Performance by forgetting risk</h4>
           {['high', 'medium', 'low'].map((band) => {
             const b = result.bands[band]
             if (!b.total) return null
