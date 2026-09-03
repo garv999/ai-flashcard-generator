@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CardsIcon, LayersIcon, BrainIcon, FlameIcon, SparklesIcon, TrashIcon } from './Icons.jsx'
+import { CardsIcon, LayersIcon, SparklesIcon, TrashIcon } from './Icons.jsx'
 import { deckDueCount } from '../services/srs.js'
 import useSemanticSearch from '../hooks/useSemanticSearch.js'
 

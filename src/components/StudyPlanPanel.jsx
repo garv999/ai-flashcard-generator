@@ -20,9 +20,7 @@ import {
   CardsIcon,
   SparklesIcon,
   CheckIcon,
-  RotateIcon,
   AlertIcon,
-  ChevronLeftIcon,
 } from './Icons.jsx'
 
 const UPCOMING_DAYS = 10 // rows shown in the schedule preview

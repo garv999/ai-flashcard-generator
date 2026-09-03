@@ -8,7 +8,6 @@ import {
   SparklesIcon,
   LayersIcon,
   CheckIcon,
-  ClockIcon,
   TrendUpIcon,
 } from './Icons.jsx'
 import {

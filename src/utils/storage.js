@@ -19,7 +19,10 @@ function safeParse(raw, fallback) {
 }
 
 export function loadSets() {
-  return safeParse(localStorage.getItem(SETS_KEY), [])
+  // Guarantee an array even if aifc.sets was manually edited / corrupted to a
+  // valid-but-non-array value (e.g. {} or null) — the app maps/filters over it.
+  const parsed = safeParse(localStorage.getItem(SETS_KEY), [])
+  return Array.isArray(parsed) ? parsed : []
 }
 
 export function saveSets(sets) {
