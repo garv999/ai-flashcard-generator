@@ -5,11 +5,12 @@ import Iphone3D from './Iphone3D.jsx'
 import ErrorBoundary from './ErrorBoundary.jsx'
 import {
   SparklesIcon,
-  ChevronRightIcon,
-  BrainIcon,
+  PlayIcon,
+  RobotIcon,
+  UserSolidIcon,
   TargetIcon,
   ClockIcon,
-  BoltIcon,
+  LogoMark,
 } from './Icons.jsx'
 
 gsap.registerPlugin(ScrollTrigger)
@@ -90,7 +91,7 @@ export default function CinematicHero({ onGetStarted }) {
         <header className="cine-nav">
           <span className="cine-nav-brand">
             <span className="cine-nav-mark">
-              <BoltIcon />
+              <LogoMark />
             </span>
             <span className="cine-nav-name">
               AI Flashcard
@@ -109,22 +110,22 @@ export default function CinematicHero({ onGetStarted }) {
               AI-Powered Study Workspace
             </p>
             <h1 className="cine-title" data-hero-in>
-              Learn anything,
+              Learn <em>anything,</em>
               <br />
-              <em>remember</em> everything.
+              remember <em>everything.</em>
             </h1>
             <p className="cine-sub" data-hero-in>
-              Turn any topic or PDF into a smart flashcard deck with spaced repetition built
-              in — so knowledge actually sticks.
+              Turn any topic or PDF into smart flashcards with AI explanations, quizzes, and
+              spaced repetition.
             </p>
             <div className="cine-actions" data-hero-in>
               <button type="button" className="cine-cta" onClick={onGetStarted}>
                 <SparklesIcon />
-                Create your deck
+                Create Your Deck
               </button>
               <button type="button" className="cine-cta-ghost" onClick={onGetStarted}>
-                <ChevronRightIcon />
-                Explore features
+                <PlayIcon />
+                Explore Features
               </button>
             </div>
 
@@ -133,13 +134,21 @@ export default function CinematicHero({ onGetStarted }) {
                 numbers (or remove the row) before any public launch. */}
             <div className="cine-proof" data-hero-in>
               <span className="cine-proof-avatars" aria-hidden="true">
-                <i />
-                <i />
-                <i />
-                <i />
+                <i>
+                  <UserSolidIcon />
+                </i>
+                <i>
+                  <UserSolidIcon />
+                </i>
+                <i>
+                  <UserSolidIcon />
+                </i>
+                <i>
+                  <UserSolidIcon />
+                </i>
               </span>
               <span className="cine-proof-copy">
-                <strong>Loved by focused learners</strong>
+                <strong>Loved by 50K+ learners</strong>
                 <span className="cine-proof-stars" aria-hidden="true">
                   ★★★★★ <em>4.9/5</em>
                 </span>
@@ -164,7 +173,7 @@ export default function CinematicHero({ onGetStarted }) {
             <div className="cine-cards">
               <div className="cine-card cine-card-coach">
                 <span className="cine-card-avatar">
-                  <BrainIcon />
+                  <RobotIcon />
                 </span>
                 <span className="cine-card-copy">
                   <strong>AI Coach</strong>

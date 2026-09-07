@@ -39,6 +39,92 @@ function drawScreen(x, w, h, screen) {
   rr(w / 2 - 72, 34, 144, 40, 20)
   x.fill()
 
+  // "Today's Progress" dashboard screen — donut mastery ring, weekly bar chart
+  // and a stats row. This is the phone's resting view in the hero.
+  if (screen === 'progress') {
+    x.fillStyle = 'rgba(255,255,255,0.96)'
+    x.font = '700 30px Inter, system-ui, sans-serif'
+    x.textBaseline = 'middle'
+    x.fillText("Today's Progress", 34, 116)
+    // close glyph
+    x.strokeStyle = 'rgba(255,255,255,0.4)'
+    x.lineWidth = 2.5
+    x.lineCap = 'round'
+    const xx = w - 46
+    x.beginPath()
+    x.moveTo(xx - 9, 107)
+    x.lineTo(xx + 9, 125)
+    x.moveTo(xx + 9, 107)
+    x.lineTo(xx - 9, 125)
+    x.stroke()
+
+    // Donut mastery ring
+    const dcx = w / 2
+    const dcy = 350
+    const R = 118
+    const ring = 26
+    x.strokeStyle = 'rgba(255,255,255,0.1)'
+    x.lineWidth = ring
+    x.beginPath()
+    x.arc(dcx, dcy, R, 0, Math.PI * 2)
+    x.stroke()
+    const ag = x.createLinearGradient(dcx - R, dcy - R, dcx + R, dcy + R)
+    ag.addColorStop(0, '#8aa0ff')
+    ag.addColorStop(1, '#38bdf8')
+    x.strokeStyle = ag
+    x.lineWidth = ring
+    const a0 = -Math.PI / 2
+    x.beginPath()
+    x.arc(dcx, dcy, R, a0, a0 + Math.PI * 2 * 0.82)
+    x.stroke()
+    x.fillStyle = '#fff'
+    x.textAlign = 'center'
+    x.font = '700 74px Inter, system-ui, sans-serif'
+    x.fillText('82%', dcx, dcy - 4)
+    x.fillStyle = 'rgba(255,255,255,0.55)'
+    x.font = '600 25px Inter, system-ui, sans-serif'
+    x.fillText('Mastery', dcx, dcy + 44)
+    x.textAlign = 'left'
+
+    // Weekly bar chart
+    const bars = [0.34, 0.52, 0.4, 0.64, 0.55, 0.8, 0.62, 0.92, 0.72, 0.86]
+    const bx0 = 40
+    const baseY = 660
+    const maxH = 150
+    const gap = 10
+    const bwe = (w - 80 - gap * (bars.length - 1)) / bars.length
+    const bgr = x.createLinearGradient(0, baseY - maxH, 0, baseY)
+    bgr.addColorStop(0, '#8aa0ff')
+    bgr.addColorStop(1, '#5b5fd6')
+    x.fillStyle = bgr
+    bars.forEach((v, i) => {
+      const h = maxH * v
+      rr(bx0 + i * (bwe + gap), baseY - h, bwe, h, 6)
+      x.fill()
+    })
+
+    // Stats row
+    const stats = [
+      ['24', 'Decks'],
+      ['1,248', 'Flashcards'],
+      ['12', 'Day Streak'],
+    ]
+    const colw = (w - 68) / 3
+    stats.forEach(([val, lab], i) => {
+      const sx = 34 + i * colw
+      x.fillStyle = '#fff'
+      x.textAlign = 'center'
+      x.font = '700 40px Inter, system-ui, sans-serif'
+      x.fillText(val, sx + colw / 2, 800)
+      x.fillStyle = 'rgba(255,255,255,0.5)'
+      x.font = '500 20px Inter, system-ui, sans-serif'
+      x.fillText(lab, sx + colw / 2, 840)
+    })
+    x.textAlign = 'left'
+    x.restore()
+    return
+  }
+
   // Header
   const dg = x.createLinearGradient(40, 0, 60, 20)
   dg.addColorStop(0, '#8aa0ff')
@@ -183,7 +269,7 @@ function useScreenTexture() {
     canvas.width = w
     canvas.height = h
     const ctx = canvas.getContext('2d')
-    drawScreen(ctx, w, h, 'question')
+    drawScreen(ctx, w, h, 'progress')
     const tex = new THREE.CanvasTexture(canvas)
     tex.colorSpace = THREE.SRGBColorSpace
     tex.flipY = false // match glTF UV convention
@@ -314,7 +400,7 @@ function Rig({ progressRef, reduced, screen }) {
 
 export default function Iphone3D({ progressRef, reduced = false }) {
   const { tex, set } = useScreenTexture()
-  const stageRef = useRef('question')
+  const stageRef = useRef('progress')
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
   const [paused, setPaused] = useState(false)
   const canvasElRef = useRef(null)
@@ -325,7 +411,7 @@ export default function Iphone3D({ progressRef, reduced = false }) {
     let raf
     const tick = () => {
       const p = progressRef.current || 0
-      const next = p < 0.34 ? 'question' : p < 0.64 ? 'answer' : 'stats'
+      const next = p < 0.3 ? 'progress' : p < 0.55 ? 'question' : p < 0.78 ? 'answer' : 'stats'
       if (next !== stageRef.current) {
         stageRef.current = next
         set(next)

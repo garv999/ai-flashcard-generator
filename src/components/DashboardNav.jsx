@@ -1,5 +1,5 @@
 import {
-  BoltIcon,
+  LogoMark,
   LayersIcon,
   CardsIcon,
   SparklesIcon,
@@ -44,7 +44,7 @@ export default function DashboardNav({
     <aside className="dnav" aria-label="Workspace navigation">
       <div className="dnav-brand">
         <span className="dnav-mark" aria-hidden="true">
-          <BoltIcon />
+          <LogoMark />
         </span>
         <span className="dnav-name">
           AI Flashcard

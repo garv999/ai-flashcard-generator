@@ -23,10 +23,12 @@
      clicks meant for the workspace scrolling underneath. Its own controls
      (CTA, scroll cue) opt back in below. */
   pointer-events: none;
-  /* Cinematic sunrise — a warm sun sitting on a hazy horizon under a lavender
-     sky, with cool blue ambient light spilling in from the upper right. Layers
-     read back-to-front: sun core → horizon bloom → blue ambient → sky/water. */
+  /* Hero background: a photograph (drop it in at public/hero-bg.jpg) covers the
+     stage; if it is missing the cinematic sunrise gradient below shows as a
+     graceful fallback. Layers read back-to-front: photo → sun/horizon → sky. */
   background:
+    /* the supplied hero photo — topmost layer, covers the fallback beneath */
+    url('/hero-bg.jpg') center / cover no-repeat,
     /* sun core, sitting right on the horizon line */
     radial-gradient(15% 9% at 46% 58%, rgba(255, 252, 244, 0.98), rgba(255, 232, 196, 0.62) 42%, transparent 74%),
     /* sun reflection streaming down the water */
@@ -39,16 +41,18 @@
     /* warm peach lift on the water */
     radial-gradient(60% 14% at 46% 68%, rgba(248, 219, 198, 0.42), transparent 76%),
     /* cool blue ambient, upper right */
-    radial-gradient(62% 48% at 88% 8%, rgba(158, 189, 250, 0.38), transparent 72%),
-    /* lavender sky descending into pale water */
+    radial-gradient(62% 48% at 88% 8%, rgba(158, 189, 250, 0.42), transparent 72%),
+    /* sunset sky over water — soft blue zenith warming to gold at the horizon,
+       cooling again on the water. (Fallback shown until public/hero-bg.jpg is
+       supplied; the photo covers all of this.) */
     linear-gradient(
       180deg,
-      #b7b2e2 0%,
-      #c7c1ea 24%,
-      #dbd4f0 44%,
-      #ece1ea 58%,
-      #e3ddf3 67%,
-      #d6d0ee 100%
+      #b3c1ee 0%,
+      #c4c3ea 26%,
+      #e2cdd8 50%,
+      #f6ddc2 60%,
+      #eed6cd 72%,
+      #d3cbe6 100%
     );
 }
 
@@ -67,7 +71,7 @@
     radial-gradient(32% 6% at 10% 48%, rgba(255, 244, 234, 0.44), transparent 76%),
     radial-gradient(38% 5% at 62% 52%, rgba(255, 250, 244, 0.4), transparent 78%);
   filter: blur(16px);
-  opacity: 0.9;
+  opacity: 0.3;
   will-change: transform;
   animation: cloud-drift 96s ease-in-out infinite alternate;
 }
@@ -97,7 +101,7 @@
   );
   -webkit-mask-image: radial-gradient(closest-side, rgba(0, 0, 0, 0.95), transparent 58%);
   mask-image: radial-gradient(closest-side, rgba(0, 0, 0, 0.95), transparent 58%);
-  opacity: 0.55;
+  opacity: 0.28;
   will-change: transform;
   animation: ray-sweep 44s ease-in-out infinite alternate;
 }
@@ -145,10 +149,11 @@
     linear-gradient(180deg, rgba(250, 249, 255, 0.28) 0%, transparent 42%, rgba(232, 229, 248, 0.38) 100%);
 }
 
-/* Distant mountain range — real silhouettes, hazed by atmospheric perspective
-   and masked away near the sun so the light burns through the ridgeline. */
+/* Distant mountain range — hidden now that a hero photo supplies its own
+   horizon; kept in the stylesheet so removing the photo restores the scene. */
 .cine-scrim::before {
   content: '';
+  display: none;
   position: absolute;
   left: -2%;
   right: -2%;
@@ -165,9 +170,10 @@
   opacity: 0.55;
 }
 
-/* Nearer range — darker and lower, giving the scene depth layering. */
+/* Nearer range — hidden alongside the distant range while a hero photo is used. */
 .cine-scrim::after {
   content: '';
+  display: none;
   position: absolute;
   left: -3%;
   right: -3%;
@@ -237,29 +243,27 @@
   align-self: stretch;
   height: min(86vh, 760px);
   min-width: 0;
-  /* Premium floating presentation for the device — no pedestal, no plate.
-     Painted behind the (transparent) WebGL canvas, so the phone reads as
-     suspended in space:
-       1. a soft ELLIPTICAL contact shadow directly beneath the device, with a
-          long radial falloff so it dissolves into the hero with no edge;
-       2. an ambient lavender glow behind the body, and
-       3. a cooler blue rim of light up and to the right, matching the hero's
-          existing studio key light. */
+  /* Premium presentation for the device — painted behind the (transparent)
+     WebGL canvas so the phone reads as standing on a glass podium:
+       1. a soft elliptical contact shadow directly beneath the device;
+       2. a glossy reflective podium ellipse with a lit core and rim;
+       3. an ambient indigo glow behind the body; and
+       4. a cool blue rim of light up and to the right (the hero key light). */
   background:
     /* contact shadow where the device meets the platform */
-    radial-gradient(20% 3% at 50% 85.5%, rgba(46, 40, 100, 0.45), transparent 72%),
-    /* reflective circular platform — an ellipse in perspective with a glossy
-       core and a lit rim, dissolving at the edges so it never reads as a plate */
-    radial-gradient(27% 5.4% at 50% 87.5%, rgba(255, 255, 255, 0.85), rgba(205, 197, 244, 0.5) 58%, transparent 82%),
-    radial-gradient(34% 6.8% at 50% 88%, rgba(180, 170, 235, 0.45), transparent 80%),
-    /* platform bloom / soft edge light */
-    radial-gradient(48% 10% at 50% 89%, rgba(150, 140, 224, 0.3), transparent 78%),
-    /* light pooling under the platform, grounding it in the water */
-    radial-gradient(38% 6% at 50% 91%, rgba(255, 240, 222, 0.24), transparent 78%),
-    /* ambient lavender glow behind the device */
-    radial-gradient(50% 40% at 50% 46%, rgba(139, 127, 240, 0.26), transparent 70%),
+    radial-gradient(22% 3.4% at 50% 85.5%, rgba(46, 40, 100, 0.5), transparent 72%),
+    /* glossy reflective podium — a brighter, more defined ellipse in perspective
+       with a lit core and rim, reading as a translucent glass platform */
+    radial-gradient(30% 6.2% at 50% 88%, rgba(255, 255, 255, 0.95), rgba(206, 198, 245, 0.66) 52%, transparent 80%),
+    radial-gradient(40% 8% at 50% 88.5%, rgba(150, 165, 240, 0.5), transparent 78%),
+    /* platform bloom / soft outer edge light */
+    radial-gradient(56% 12% at 50% 90%, rgba(120, 150, 235, 0.34), transparent 76%),
+    /* light pooling under the platform, grounding it */
+    radial-gradient(44% 7% at 50% 92%, rgba(210, 224, 255, 0.28), transparent 78%),
+    /* ambient indigo glow behind the device */
+    radial-gradient(50% 40% at 50% 46%, rgba(139, 127, 240, 0.24), transparent 70%),
     /* cool blue rim light, matching the hero key light */
-    radial-gradient(40% 32% at 62% 32%, rgba(160, 190, 250, 0.22), transparent 72%);
+    radial-gradient(40% 32% at 62% 32%, rgba(160, 190, 250, 0.24), transparent 72%);
 }
 
 /* ---- Landing nav ------------------------------------------------------ */
@@ -282,11 +286,12 @@
   gap: 10px;
   padding: 8px 16px 8px 10px;
   border-radius: var(--r-pill);
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(22px) saturate(1.7);
-  -webkit-backdrop-filter: blur(22px) saturate(1.7);
-  border: 1px solid rgba(255, 255, 255, 0.85);
-  box-shadow: 0 12px 30px -16px rgba(60, 56, 130, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  /* Frosted glass — translucent so the hero background reads through it. */
+  background: rgba(255, 255, 255, 0.34);
+  backdrop-filter: blur(30px) saturate(1.9);
+  -webkit-backdrop-filter: blur(30px) saturate(1.9);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow: 0 14px 34px -18px rgba(60, 56, 130, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 .cine-nav-mark {
   display: grid;
@@ -299,10 +304,8 @@
   box-shadow: var(--shadow-accent);
 }
 .cine-nav-mark svg {
-  width: 16px;
-  height: 16px;
-  fill: currentColor;
-  stroke: none;
+  width: 17px;
+  height: 17px;
 }
 .cine-nav-name {
   font-size: 12px;
@@ -374,11 +377,19 @@
   display: inline-flex;
 }
 .cine-proof-avatars i {
+  display: grid;
+  place-items: center;
   width: 30px;
   height: 30px;
   border-radius: 50%;
   border: 2px solid rgba(255, 255, 255, 0.92);
   box-shadow: 0 4px 12px -4px rgba(60, 56, 130, 0.4);
+  color: rgba(255, 255, 255, 0.94);
+  overflow: hidden;
+}
+.cine-proof-avatars i svg {
+  width: 15px;
+  height: 15px;
 }
 .cine-proof-avatars i + i {
   margin-left: -10px;
@@ -437,10 +448,11 @@
   gap: 6px;
   padding: 14px 16px;
   border-radius: var(--r-lg);
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(26px) saturate(1.8);
-  -webkit-backdrop-filter: blur(26px) saturate(1.8);
-  border: 1px solid rgba(255, 255, 255, 0.9);
+  /* Frosted glass over the hero photo */
+  background: rgba(255, 255, 255, 0.58);
+  backdrop-filter: blur(30px) saturate(1.9);
+  -webkit-backdrop-filter: blur(30px) saturate(1.9);
+  border: 1px solid rgba(255, 255, 255, 0.7);
   box-shadow:
     0 18px 40px -18px rgba(60, 56, 130, 0.42),
     0 6px 14px -8px rgba(60, 56, 130, 0.2),
@@ -620,7 +632,8 @@
 }
 .cine-title em {
   font-style: normal;
-  background: var(--grad-text);
+  /* Blue → indigo accent on the emphasised words (anything / everything) */
+  background: linear-gradient(120deg, #5b8cff 0%, #6a5bff 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;

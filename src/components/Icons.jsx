@@ -15,10 +15,91 @@ const base = {
   focusable: false,
 }
 
-export function BoltIcon(props) {
+// Brand mark — a glossy 3-D sphere cluster (a molecule / berry of pearls): six
+// spheres ringed around a larger central one, each shaded with a radial gradient
+// (bright top-left highlight → light-indigo underside) for a volumetric, glossy
+// read on the indigo badge. Ships its own gradient + fills, so the nav-mark CSS
+// no longer forces fill/stroke.
+export function LogoMark(props) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={20}
+      height={20}
+      aria-hidden={true}
+      focusable={false}
+      {...props}
+    >
+      <defs>
+        <radialGradient id="logoSphere" cx="0.34" cy="0.3" r="0.8">
+          <stop offset="0%" stopColor="#ffffff" />
+          <stop offset="46%" stopColor="#e4e7ff" />
+          <stop offset="100%" stopColor="#a6b0f4" />
+        </radialGradient>
+      </defs>
+      <g fill="url(#logoSphere)" stroke="rgba(46, 42, 104, 0.32)" strokeWidth={0.4}>
+        {/* six outer spheres, then the larger hub on top */}
+        <circle cx="12" cy="6.7" r="3.05" />
+        <circle cx="16.6" cy="9.35" r="3.05" />
+        <circle cx="16.6" cy="14.65" r="3.05" />
+        <circle cx="12" cy="17.3" r="3.05" />
+        <circle cx="7.4" cy="14.65" r="3.05" />
+        <circle cx="7.4" cy="9.35" r="3.05" />
+        <circle cx="12" cy="12" r="3.85" />
+      </g>
+    </svg>
+  )
+}
+
+// Friendly robot — mascot stand-in for the AI Coach card.
+export function RobotIcon(props) {
   return (
     <svg {...base} {...props}>
-      <path d="M13 2 4.5 13.5H11l-1 8.5L19.5 10.5H13z" />
+      <rect x="4" y="8.5" width="16" height="11.5" rx="3.5" />
+      <line x1="12" y1="8.5" x2="12" y2="4.6" />
+      <circle cx="12" cy="3.5" r="1.15" fill="currentColor" stroke="none" />
+      <circle cx="9" cy="14" r="1.3" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="14" r="1.3" fill="currentColor" stroke="none" />
+      <line x1="9.6" y1="17.3" x2="14.4" y2="17.3" />
+      <line x1="2.6" y1="12.2" x2="2.6" y2="15.6" />
+      <line x1="21.4" y1="12.2" x2="21.4" y2="15.6" />
+    </svg>
+  )
+}
+
+// Filled person silhouette — avatar stand-in for the social-proof row.
+export function UserSolidIcon(props) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      stroke="none"
+      width={20}
+      height={20}
+      aria-hidden={true}
+      focusable={false}
+      {...props}
+    >
+      <circle cx="12" cy="8.4" r="4" />
+      <path d="M4.6 20.2a7.4 7.4 0 0 1 14.8 0 0.9 0.9 0 0 1-.9.9H5.5a.9.9 0 0 1-.9-.9z" />
+    </svg>
+  )
+}
+
+// Solid play triangle — used on the hero "Explore features" action.
+export function PlayIcon(props) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      stroke="none"
+      width={20}
+      height={20}
+      aria-hidden={true}
+      focusable={false}
+      {...props}
+    >
+      <path d="M8 5.14v13.72a1 1 0 0 0 1.52.85l11.14-6.86a1 1 0 0 0 0-1.7L9.52 4.29A1 1 0 0 0 8 5.14z" />
     </svg>
   )
 }
