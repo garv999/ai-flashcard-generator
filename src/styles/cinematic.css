@@ -668,7 +668,8 @@
   box-shadow: 0 0 0 3px var(--bg), 0 0 0 6px var(--accent-ring);
 }
 
-/* Scroll hint */
+/* Scroll hint — a classic mouse indicator (outline + animated wheel) stacked
+   above the label. */
 .cine-scroll-hint {
   pointer-events: auto;
   position: absolute;
@@ -677,6 +678,7 @@
   transform: translateX(-50%);
   z-index: 2;
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
   gap: 8px;
   padding: 6px 10px;
@@ -684,25 +686,44 @@
   background: transparent;
   color: var(--text-muted);
   font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
-.cine-scroll-hint svg {
-  width: 15px;
-  height: 15px;
-  transform: rotate(90deg);
-  animation: hint-bounce 1.6s ease-in-out infinite;
+/* Mouse body — a rounded pill outline */
+.cine-scroll-mouse {
+  display: flex;
+  justify-content: center;
+  width: 22px;
+  height: 34px;
+  padding-top: 6px;
+  border: 2px solid currentColor;
+  border-radius: var(--r-pill);
+}
+/* Scroll wheel — a small dot that falls and fades, cueing the downward scroll */
+.cine-scroll-wheel {
+  width: 3px;
+  height: 7px;
+  border-radius: var(--r-pill);
+  background: currentColor;
+  animation: mouse-scroll 1.6s ease-in-out infinite;
 }
 .cine-scroll-hint:hover {
   color: var(--text);
 }
-@keyframes hint-bounce {
-  0%,
-  100% {
-    transform: rotate(90deg) translateX(0);
+@keyframes mouse-scroll {
+  0% {
+    opacity: 0;
+    transform: translateY(-2px);
   }
-  50% {
-    transform: rotate(90deg) translateX(4px);
+  35% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(7px);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(7px);
   }
 }
 
@@ -754,7 +775,7 @@
   .cine-stage {
     position: relative;
   }
-  .cine-scroll-hint svg {
+  .cine-scroll-wheel {
     animation: none;
   }
   .cine-overlay [data-hero-in] {

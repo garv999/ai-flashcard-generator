@@ -212,8 +212,10 @@ export default function CinematicHero({ onGetStarted }) {
           onClick={onGetStarted}
           aria-label="Scroll to the workspace"
         >
+          <span className="cine-scroll-mouse" aria-hidden="true">
+            <span className="cine-scroll-wheel" />
+          </span>
           <span>Scroll to explore</span>
-          <ChevronRightIcon />
         </button>
 
         <div className="cine-recede" aria-hidden="true" />
