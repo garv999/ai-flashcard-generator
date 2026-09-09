@@ -85,9 +85,9 @@ export default function CinematicHero({ onGetStarted }) {
         <div className="cine-scrim" aria-hidden="true" />
 
         {/* Landing nav, composed like the reference: glass logo pill on the left,
-            primary action on the right. Marketing links (Features/Pricing/Blog)
-            are intentionally omitted — those pages don't exist in this app and
-            dead links would be a real regression. */}
+            marketing links in the centre, primary action on the right. The
+            centre links have no dedicated pages, so they scroll into the
+            workspace rather than 404. */}
         <header className="cine-nav">
           <span className="cine-nav-brand">
             <span className="cine-nav-mark">
@@ -99,6 +99,23 @@ export default function CinematicHero({ onGetStarted }) {
               Generator
             </span>
           </span>
+          <nav className="cine-nav-links" aria-label="Primary">
+            <button type="button" onClick={onGetStarted}>
+              Features
+            </button>
+            <button type="button" onClick={onGetStarted}>
+              How it Works
+            </button>
+            <button type="button" onClick={onGetStarted}>
+              Pricing
+            </button>
+            <button type="button" onClick={onGetStarted}>
+              Blog
+            </button>
+            <button type="button" onClick={onGetStarted}>
+              About
+            </button>
+          </nav>
           <button type="button" className="cine-nav-cta" onClick={onGetStarted}>
             Get Started
           </button>
@@ -112,7 +129,9 @@ export default function CinematicHero({ onGetStarted }) {
             <h1 className="cine-title" data-hero-in>
               Learn <em>anything,</em>
               <br />
-              remember <em>everything.</em>
+              remember
+              <br />
+              <em>everything.</em>
             </h1>
             <p className="cine-sub" data-hero-in>
               Turn any topic or PDF into smart flashcards with AI explanations, quizzes, and

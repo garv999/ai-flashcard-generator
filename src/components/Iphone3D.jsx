@@ -11,7 +11,8 @@ const MODEL_URL = '/iphone.glb'
 // ---- Tunables ----
 const MODEL_ROT = [0, Math.PI, 0] // bring the screen to the front at rest
 const SCREEN_MATERIAL = 'qfUvsPEhJGFIbDJ_001' // the emissive display mesh's material
-const FIT_HEIGHT = 3.2 // target on-screen height in world units
+const FIT_HEIGHT = 2.95 // target on-screen height in world units
+const PHONE_Y = -0.25 // seat the phone lower so its base meets the podium
 
 const lerp = THREE.MathUtils.lerp
 
@@ -353,7 +354,7 @@ function Rig({ progressRef, reduced, screen }) {
   const screen0 = screen
 
   // Scroll keyframes for a natural multi-angle path (radians).
-  const RY = [-0.55, 0.15, 2.4, 6.1] // front → 3/4 → back → full spin to front
+  const RY = [-0.46, 0.15, 2.4, 6.1] // subtle 3/4 tilt → back → full spin to front
   const RX = [0.16, -0.05, -0.16, 0.1]
   const SCL = [1, 1.08, 0.92, 1.04]
 
@@ -379,12 +380,14 @@ function Rig({ progressRef, reduced, screen }) {
     if (reduced) {
       g.rotation.set(tx, ty, 0)
       g.scale.setScalar(ts)
+      g.position.y = PHONE_Y
       return
     }
     g.rotation.y += (ty - g.rotation.y) * 0.08
     g.rotation.x += (tx - g.rotation.x) * 0.08
     g.scale.setScalar(g.scale.x + (ts - g.scale.x) * 0.08)
-    g.position.y = Math.sin(t * 0.6) * 0.06
+    // Seat the phone lower so its base meets the podium (rather than floating).
+    g.position.y = PHONE_Y + Math.sin(t * 0.6) * 0.06
     // gentle x drift for parallax depth
     g.position.x += (mx * 0.15 - g.position.x) * 0.05
   })

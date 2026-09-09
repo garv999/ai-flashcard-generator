@@ -23,36 +23,39 @@
      clicks meant for the workspace scrolling underneath. Its own controls
      (CTA, scroll cue) opt back in below. */
   pointer-events: none;
-  /* Hero background: a photograph (drop it in at public/hero-bg.jpg) covers the
-     stage; if it is missing the cinematic sunrise gradient below shows as a
-     graceful fallback. Layers read back-to-front: photo → sun/horizon → sky. */
+  /* Cinematic dawn over a mountain lake — recreated entirely in CSS (no photo):
+     a periwinkle sky with a soft white-pink sun bloom on the horizon, warming
+     the centre, cooling to lavender water below. Reads back-to-front:
+     sun core → reflection → horizon bloom → cool ambient → sky/water. */
   background:
-    /* the supplied hero photo — topmost layer, covers the fallback beneath */
-    url('/hero-bg.jpg') center / cover no-repeat,
-    /* sun core, sitting right on the horizon line */
-    radial-gradient(15% 9% at 46% 58%, rgba(255, 252, 244, 0.98), rgba(255, 232, 196, 0.62) 42%, transparent 74%),
-    /* sun reflection streaming down the water */
-    radial-gradient(5.5% 19% at 46% 76%, rgba(255, 234, 200, 0.62), transparent 74%),
-    radial-gradient(11% 9% at 46% 66%, rgba(255, 240, 214, 0.45), transparent 76%),
-    /* crisp horizon line where sea meets sky */
-    linear-gradient(180deg, transparent 57.2%, rgba(255, 251, 242, 0.7) 58%, transparent 59.2%),
-    /* golden horizon bloom */
-    radial-gradient(78% 22% at 46% 59%, rgba(250, 211, 172, 0.6), transparent 74%),
-    /* warm peach lift on the water */
-    radial-gradient(60% 14% at 46% 68%, rgba(248, 219, 198, 0.42), transparent 76%),
-    /* cool blue ambient, upper right */
-    radial-gradient(62% 48% at 88% 8%, rgba(158, 189, 250, 0.42), transparent 72%),
-    /* sunset sky over water — soft blue zenith warming to gold at the horizon,
-       cooling again on the water. (Fallback shown until public/hero-bg.jpg is
-       supplied; the photo covers all of this.) */
+    /* bright white-pink sun core, sitting on the horizon line */
+    radial-gradient(15% 9% at 47% 57.5%, rgba(255, 255, 254, 1), rgba(255, 232, 224, 0.72) 40%, transparent 72%),
+    /* sun reflection streaming down the reflective water */
+    radial-gradient(6% 22% at 47% 80%, rgba(255, 235, 228, 0.6), transparent 74%),
+    radial-gradient(12% 9% at 47% 66%, rgba(255, 238, 232, 0.48), transparent 76%),
+    /* broad soft central illumination behind the composition */
+    radial-gradient(66% 52% at 47% 56%, rgba(255, 244, 236, 0.26), transparent 72%),
+    /* wide warm pink-cream horizon bloom */
+    radial-gradient(96% 32% at 47% 59%, rgba(253, 229, 218, 0.8), transparent 74%),
+    /* reflective water sheen just below the horizon line */
+    linear-gradient(180deg, transparent 60%, rgba(206, 212, 244, 0.28) 63.5%, transparent 71%),
+    /* soft pink lift on the water */
+    radial-gradient(64% 16% at 47% 68%, rgba(236, 214, 226, 0.42), transparent 76%),
+    /* cool periwinkle ambient in the upper corners */
+    radial-gradient(72% 52% at 84% 4%, rgba(126, 150, 234, 0.5), transparent 72%),
+    radial-gradient(62% 48% at 10% 3%, rgba(124, 146, 228, 0.42), transparent 72%),
+    /* dark blue-purple foreground floor at the very bottom, for depth */
+    linear-gradient(180deg, transparent 76%, rgba(60, 56, 108, 0.44) 90%, rgba(40, 38, 82, 0.66) 100%),
+    /* dawn sky over water: deeper periwinkle zenith → warm horizon → lavender */
     linear-gradient(
       180deg,
-      #b3c1ee 0%,
-      #c4c3ea 26%,
-      #e2cdd8 50%,
-      #f6ddc2 60%,
-      #eed6cd 72%,
-      #d3cbe6 100%
+      #6376bd 0%,
+      #7c8ccd 16%,
+      #adafda 38%,
+      #e4d3d5 55%,
+      #f0ded7 60%,
+      #c1bce0 74%,
+      #adadd4 100%
     );
 }
 
@@ -68,10 +71,10 @@
     radial-gradient(28% 6% at 66% 18%, rgba(255, 255, 255, 0.45), transparent 74%),
     radial-gradient(44% 7% at 46% 40%, rgba(255, 246, 236, 0.52), transparent 76%),
     radial-gradient(24% 5% at 86% 34%, rgba(255, 255, 255, 0.4), transparent 74%),
-    radial-gradient(32% 6% at 10% 48%, rgba(255, 244, 234, 0.44), transparent 76%),
-    radial-gradient(38% 5% at 62% 52%, rgba(255, 250, 244, 0.4), transparent 78%);
+    radial-gradient(32% 6% at 10% 48%, rgba(244, 240, 255, 0.5), transparent 76%),
+    radial-gradient(38% 5% at 62% 52%, rgba(255, 250, 250, 0.46), transparent 78%);
   filter: blur(16px);
-  opacity: 0.3;
+  opacity: 0.6;
   will-change: transform;
   animation: cloud-drift 96s ease-in-out infinite alternate;
 }
@@ -135,31 +138,30 @@
   inset: 0;
   pointer-events: none;
   background:
-    /* legibility wash (kept) */
-    radial-gradient(72% 82% at 24% 46%, rgba(250, 249, 255, 0.68), transparent 66%),
-    /* horizon fog bank */
+    /* legibility wash under the headline (left) — cool lavender-white */
+    radial-gradient(74% 84% at 22% 46%, rgba(238, 240, 255, 0.62), transparent 64%),
+    /* horizon haze — warm pink meeting cool lavender */
     linear-gradient(
       180deg,
       transparent 50%,
-      rgba(255, 246, 236, 0.42) 59%,
-      rgba(232, 227, 246, 0.46) 66%,
-      transparent 80%
+      rgba(250, 232, 228, 0.4) 59%,
+      rgba(206, 200, 234, 0.44) 66%,
+      transparent 82%
     ),
-    /* overall vertical grade (kept) */
-    linear-gradient(180deg, rgba(250, 249, 255, 0.28) 0%, transparent 42%, rgba(232, 229, 248, 0.38) 100%);
+    /* overall vertical grade — cool */
+    linear-gradient(180deg, rgba(226, 230, 255, 0.26) 0%, transparent 42%, rgba(196, 192, 226, 0.4) 100%);
 }
 
-/* Distant mountain range — hidden now that a hero photo supplies its own
-   horizon; kept in the stylesheet so removing the photo restores the scene. */
+/* Distant mountain range — real silhouettes, hazed by atmospheric perspective
+   and masked away near the sun so the light burns through the ridgeline. */
 .cine-scrim::before {
   content: '';
-  display: none;
   position: absolute;
   left: -2%;
   right: -2%;
-  bottom: 41%;
-  height: 15%;
-  background: linear-gradient(180deg, rgba(146, 140, 194, 0.6) 0%, rgba(180, 174, 216, 0.34) 100%);
+  bottom: 40%;
+  height: 16%;
+  background: linear-gradient(180deg, rgba(88, 86, 132, 0.5) 0%, rgba(122, 120, 162, 0.28) 100%);
   clip-path: polygon(
     0% 100%, 0% 66%, 5% 52%, 11% 70%, 18% 40%, 25% 62%, 32% 34%, 40% 60%,
     47% 46%, 54% 68%, 61% 42%, 69% 64%, 77% 36%, 85% 60%, 92% 48%, 100% 66%, 100% 100%
@@ -167,19 +169,18 @@
   -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 20%, rgba(0, 0, 0, 0.18) 40%, rgba(0, 0, 0, 0.14) 52%, #000 74%, #000 100%);
   mask-image: linear-gradient(90deg, #000 0%, #000 20%, rgba(0, 0, 0, 0.18) 40%, rgba(0, 0, 0, 0.14) 52%, #000 74%, #000 100%);
   filter: blur(1.6px);
-  opacity: 0.55;
+  opacity: 0.72;
 }
 
-/* Nearer range — hidden alongside the distant range while a hero photo is used. */
+/* Nearer range — darker and lower, giving the scene depth layering. */
 .cine-scrim::after {
   content: '';
-  display: none;
   position: absolute;
   left: -3%;
   right: -3%;
-  bottom: 38.5%;
-  height: 11%;
-  background: linear-gradient(180deg, rgba(112, 106, 164, 0.7) 0%, rgba(146, 140, 194, 0.44) 100%);
+  bottom: 37.5%;
+  height: 12%;
+  background: linear-gradient(180deg, rgba(50, 48, 90, 0.8) 0%, rgba(86, 84, 128, 0.44) 100%);
   clip-path: polygon(
     0% 100%, 0% 72%, 8% 54%, 15% 76%, 23% 46%, 31% 70%, 39% 52%, 47% 74%,
     56% 48%, 64% 72%, 72% 56%, 80% 76%, 88% 52%, 95% 70%, 100% 60%, 100% 100%
@@ -187,10 +188,10 @@
   -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 16%, rgba(0, 0, 0, 0.12) 40%, rgba(0, 0, 0, 0.1) 54%, #000 78%, #000 100%);
   mask-image: linear-gradient(90deg, #000 0%, #000 16%, rgba(0, 0, 0, 0.12) 40%, rgba(0, 0, 0, 0.1) 54%, #000 78%, #000 100%);
   filter: blur(1.1px);
-  opacity: 0.62;
+  opacity: 0.82;
 }
 
-/* Depth veil — same titanium grey as the stage. Fades in over the hero (text +
+/* Depth veil — lavender, matching the stage. Fades in over the hero (text +
    phone) as the workspace rises, so the scene recedes into depth without a CSS
    filter on the WebGL canvas (which would break its compositing). */
 .cine-recede {
@@ -204,7 +205,7 @@
   pointer-events: none;
   will-change: opacity;
   background:
-    radial-gradient(58% 62% at 72% 44%, rgba(255, 245, 235, 0.6), transparent 66%),
+    radial-gradient(58% 62% at 72% 44%, rgba(238, 236, 252, 0.6), transparent 66%),
     linear-gradient(165deg, #dcd9f5 0%, #e6e2f7 45%, #efeafb 100%);
 }
 
@@ -214,13 +215,17 @@
   inset: 0;
   z-index: 2;
   display: grid;
-  grid-template-columns: 1.05fr 0.95fr;
+  grid-template-columns: 0.92fr 1.08fr;
   align-items: center;
-  gap: clamp(24px, 5vw, 72px);
-  width: min(1180px, 100%);
+  gap: clamp(24px, 4vw, 60px);
+  width: min(1240px, 100%);
   margin: 0 auto;
   padding: clamp(24px, 6vw, 80px);
   color: var(--text);
+  /* Raise the whole composition (left content + phone + cards) so it sits higher
+     with less empty space under the nav, matching the reference. Nav is
+     separate, so it stays put. */
+  transform: translateY(-5vh);
   /* The hero sits at z-index 2, ABOVE the workspace that scrolls up over it.
      Its copy and phone canvas are purely decorative, so they must never
      swallow clicks meant for the workspace underneath (topic input, PDF
@@ -241,8 +246,11 @@
 .cine-visual {
   position: relative;
   align-self: stretch;
-  height: min(86vh, 760px);
+  height: min(86vh, 770px);
   min-width: 0;
+  /* Nudge the phone (and its floating cards) LEFT toward the page centre so it
+     is central-right rather than pinned to the far right, per the reference. */
+  transform: translateX(-3.5vw);
   /* Premium presentation for the device — painted behind the (transparent)
      WebGL canvas so the phone reads as standing on a glass podium:
        1. a soft elliptical contact shadow directly beneath the device;
@@ -250,20 +258,22 @@
        3. an ambient indigo glow behind the body; and
        4. a cool blue rim of light up and to the right (the hero key light). */
   background:
-    /* contact shadow where the device meets the platform */
-    radial-gradient(22% 3.4% at 50% 85.5%, rgba(46, 40, 100, 0.5), transparent 72%),
-    /* glossy reflective podium — a brighter, more defined ellipse in perspective
-       with a lit core and rim, reading as a translucent glass platform */
-    radial-gradient(30% 6.2% at 50% 88%, rgba(255, 255, 255, 0.95), rgba(206, 198, 245, 0.66) 52%, transparent 80%),
-    radial-gradient(40% 8% at 50% 88.5%, rgba(150, 165, 240, 0.5), transparent 78%),
-    /* platform bloom / soft outer edge light */
-    radial-gradient(56% 12% at 50% 90%, rgba(120, 150, 235, 0.34), transparent 76%),
-    /* light pooling under the platform, grounding it */
-    radial-gradient(44% 7% at 50% 92%, rgba(210, 224, 255, 0.28), transparent 78%),
+    /* contact shadow where the device meets the podium top */
+    radial-gradient(15% 1.8% at 50% 84.5%, rgba(18, 14, 50, 0.5), transparent 72%),
+    /* glossy podium TOP surface — a solid, bright reflective ellipse */
+    radial-gradient(32% 6.2% at 50% 87%, rgba(232, 236, 255, 0.9), rgba(154, 166, 242, 0.66) 52%, transparent 80%),
+    /* bright rim highlight tracing the front edge — reads as a disc, not a ring */
+    radial-gradient(35% 7.2% at 50% 88.4%, transparent 62%, rgba(206, 218, 255, 0.7) 77%, transparent 88%),
+    /* cylinder BODY / thickness — a darker blue band just below the top */
+    radial-gradient(38% 4.8% at 50% 90.5%, rgba(74, 84, 188, 0.55), rgba(52, 60, 152, 0.3) 60%, transparent 82%),
+    /* concentrated blue glow from within the podium */
+    radial-gradient(42% 6.6% at 50% 90.5%, rgba(112, 132, 250, 0.46), transparent 76%),
+    /* contained blue-violet bloom under the podium */
+    radial-gradient(58% 12% at 50% 92%, rgba(100, 118, 240, 0.34), transparent 74%),
     /* ambient indigo glow behind the device */
-    radial-gradient(50% 40% at 50% 46%, rgba(139, 127, 240, 0.24), transparent 70%),
+    radial-gradient(52% 42% at 50% 44%, rgba(139, 127, 240, 0.2), transparent 70%),
     /* cool blue rim light, matching the hero key light */
-    radial-gradient(40% 32% at 62% 32%, rgba(160, 190, 250, 0.24), transparent 72%);
+    radial-gradient(40% 32% at 62% 30%, rgba(150, 185, 250, 0.2), transparent 72%);
 }
 
 /* ---- Landing nav ------------------------------------------------------ */
@@ -273,12 +283,41 @@
   top: clamp(16px, 2.4vh, 28px);
   left: 50%;
   transform: translateX(-50%);
-  width: min(1180px, 100%);
-  padding: 0 clamp(24px, 6vw, 80px);
+  width: min(1280px, 100%);
+  padding: 0 clamp(24px, 5vw, 64px);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--s-4);
+}
+
+/* Centre marketing links — dark navy on the light dawn sky */
+.cine-nav-links {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: clamp(16px, 2.2vw, 34px);
+}
+.cine-nav-links button {
+  border: none;
+  background: transparent;
+  padding: 6px 2px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  opacity: 0.82;
+  transition: opacity 0.2s ease, color 0.2s ease;
+}
+.cine-nav-links button:hover {
+  opacity: 1;
+  color: var(--accent);
+}
+/* On narrow viewports the links would crowd the brand + CTA — drop them. */
+@media (max-width: 940px) {
+  .cine-nav-links {
+    display: none;
+  }
 }
 .cine-nav-brand {
   display: inline-flex;
@@ -433,26 +472,26 @@
   position: absolute;
   /* Sit to the RIGHT of the device, overlapping only its outer edge — as in the
      reference — rather than covering the screen. */
-  right: -27%;
+  right: -10%;
   top: 9%;
   display: flex;
   flex-direction: column;
-  gap: clamp(10px, 1.4vh, 18px);
-  width: clamp(178px, 14vw, 214px);
+  gap: clamp(11px, 1.5vh, 16px);
+  width: clamp(150px, 11vw, 182px);
   pointer-events: none;
 }
 
 .cine-card {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 14px 16px;
+  gap: 5px;
+  padding: 12px 14px;
   border-radius: var(--r-lg);
-  /* Frosted glass over the hero photo */
-  background: rgba(255, 255, 255, 0.58);
-  backdrop-filter: blur(30px) saturate(1.9);
-  -webkit-backdrop-filter: blur(30px) saturate(1.9);
-  border: 1px solid rgba(255, 255, 255, 0.7);
+  /* Stronger frosted glass over the hero scene */
+  background: rgba(255, 255, 255, 0.48);
+  backdrop-filter: blur(32px) saturate(1.9);
+  -webkit-backdrop-filter: blur(32px) saturate(1.9);
+  border: 1px solid rgba(255, 255, 255, 0.6);
   box-shadow:
     0 18px 40px -18px rgba(60, 56, 130, 0.42),
     0 6px 14px -8px rgba(60, 56, 130, 0.2),
@@ -495,7 +534,7 @@
   color: var(--text);
 }
 .cine-card-value {
-  font-size: 19px;
+  font-size: 17px;
   font-weight: 700;
   letter-spacing: -0.03em;
   line-height: 1.1;
@@ -519,10 +558,10 @@
 .cine-card-avatar {
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   flex-shrink: 0;
-  border-radius: 12px;
+  border-radius: 11px;
   background: var(--grad);
   color: #fff;
   box-shadow: var(--shadow-accent);
@@ -624,16 +663,21 @@
 
 .cine-title {
   margin: 0;
-  font-size: clamp(36px, 5.4vw, 76px);
+  /* Sized so "Learn anything," stays on one line (3-line composition) and the
+     headline stays prominent without dominating, matching the reference.
+     nowrap forces breaks only at the explicit <br>s, so a line never wraps
+     awkwardly at the column edge (it scales down with the viewport instead). */
+  font-size: clamp(27px, 3.05vw, 46px);
   font-weight: 700;
-  line-height: 1.03;
+  line-height: 1.05;
+  white-space: nowrap;
   letter-spacing: -0.03em;
-  text-shadow: 0 1px 24px rgba(255, 255, 255, 0.6);
+  text-shadow: 0 1px 24px rgba(255, 255, 255, 0.55);
 }
 .cine-title em {
   font-style: normal;
-  /* Blue → indigo accent on the emphasised words (anything / everything) */
-  background: linear-gradient(120deg, #5b8cff 0%, #6a5bff 100%);
+  /* Blue → violet accent on the emphasised words (anything / everything) */
+  background: linear-gradient(120deg, #4f86ff 0%, #7b63ff 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -652,7 +696,6 @@
   display: inline-flex;
   align-items: center;
   gap: 9px;
-  margin-top: clamp(26px, 3.4vw, 40px);
   padding: 14px 28px;
   border: none;
   border-radius: 999px;
