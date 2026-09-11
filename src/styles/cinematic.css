@@ -34,7 +34,7 @@
     radial-gradient(6% 22% at 47% 80%, rgba(255, 235, 228, 0.6), transparent 74%),
     radial-gradient(12% 9% at 47% 66%, rgba(255, 238, 232, 0.48), transparent 76%),
     /* broad soft central illumination behind the composition */
-    radial-gradient(66% 52% at 47% 56%, rgba(255, 244, 236, 0.26), transparent 72%),
+    radial-gradient(68% 54% at 47% 55%, rgba(255, 245, 238, 0.32), transparent 72%),
     /* wide warm pink-cream horizon bloom */
     radial-gradient(96% 32% at 47% 59%, rgba(253, 229, 218, 0.8), transparent 74%),
     /* reflective water sheen just below the horizon line */
@@ -49,9 +49,9 @@
     /* dawn sky over water: deeper periwinkle zenith → warm horizon → lavender */
     linear-gradient(
       180deg,
-      #6376bd 0%,
-      #7c8ccd 16%,
-      #adafda 38%,
+      #596cb4 0%,
+      #7788cb 16%,
+      #abadd9 38%,
       #e4d3d5 55%,
       #f0ded7 60%,
       #c1bce0 74%,
@@ -240,11 +240,20 @@
 .cine-text {
   text-align: left;
   min-width: 0;
+  /* Raise the left content group and nudge it left for more breathing room from
+     the phone (position, not transform, so it never fights the GSAP scroll
+     animation on this element). */
+  position: relative;
+  top: -4vh;
+  left: -2vw;
 }
 
 /* Right column holds the WebGL phone canvas */
 .cine-visual {
   position: relative;
+  /* Own stacking context so the podium (z-index -1) sits behind the phone
+     canvas but in front of this column's ambient background. */
+  isolation: isolate;
   align-self: stretch;
   height: min(86vh, 770px);
   min-width: 0;
@@ -257,23 +266,64 @@
        2. a glossy reflective podium ellipse with a lit core and rim;
        3. an ambient indigo glow behind the body; and
        4. a cool blue rim of light up and to the right (the hero key light). */
+  /* Only ambient light for the phone body here — the podium itself is a real
+     element (.cine-podium) so it can read as a solid disc, not a background
+     gradient ring. */
   background:
-    /* contact shadow where the device meets the podium top */
-    radial-gradient(15% 1.8% at 50% 84.5%, rgba(18, 14, 50, 0.5), transparent 72%),
-    /* glossy podium TOP surface — a solid, bright reflective ellipse */
-    radial-gradient(32% 6.2% at 50% 87%, rgba(232, 236, 255, 0.9), rgba(154, 166, 242, 0.66) 52%, transparent 80%),
-    /* bright rim highlight tracing the front edge — reads as a disc, not a ring */
-    radial-gradient(35% 7.2% at 50% 88.4%, transparent 62%, rgba(206, 218, 255, 0.7) 77%, transparent 88%),
-    /* cylinder BODY / thickness — a darker blue band just below the top */
-    radial-gradient(38% 4.8% at 50% 90.5%, rgba(74, 84, 188, 0.55), rgba(52, 60, 152, 0.3) 60%, transparent 82%),
-    /* concentrated blue glow from within the podium */
-    radial-gradient(42% 6.6% at 50% 90.5%, rgba(112, 132, 250, 0.46), transparent 76%),
-    /* contained blue-violet bloom under the podium */
-    radial-gradient(58% 12% at 50% 92%, rgba(100, 118, 240, 0.34), transparent 74%),
     /* ambient indigo glow behind the device */
     radial-gradient(52% 42% at 50% 44%, rgba(139, 127, 240, 0.2), transparent 70%),
     /* cool blue rim light, matching the hero key light */
     radial-gradient(40% 32% at 62% 30%, rgba(150, 185, 250, 0.2), transparent 72%);
+}
+
+/* ---- Podium: a real glossy cylindrical platform the phone stands on -------- */
+.cine-podium {
+  position: absolute;
+  z-index: -1; /* behind the phone canvas, shown through its transparent areas */
+  left: 50%;
+  bottom: -2%;
+  transform: translateX(-50%);
+  width: 47%;
+  height: 13.5%;
+  border-radius: 50%;
+  /* cylinder SIDE/body — blue-violet, catches a little light mid-height */
+  background: linear-gradient(
+    180deg,
+    rgba(120, 134, 236, 0.72) 0%,
+    rgba(80, 90, 194, 0.85) 38%,
+    rgba(46, 54, 144, 0.72) 100%
+  );
+  box-shadow:
+    /* soft blue-violet glow contained around/under the podium */
+    0 16px 54px 12px rgba(96, 116, 240, 0.55),
+    /* bright top edge highlight (rim where the top surface meets the side) */
+    inset 0 2px 3px rgba(214, 224, 255, 0.6),
+    /* inner base shadow — reads as cylindrical depth */
+    inset 0 -8px 14px rgba(24, 28, 82, 0.62);
+}
+/* glossy elliptical TOP surface sitting flush on the body — the disc top.
+   Wide, with a bright central reflection and a subtle contact shadow where the
+   phone base rests, so the podium reads as one glossy cylinder, not two ovals. */
+.cine-podium-top {
+  position: absolute;
+  left: 50%;
+  top: -28%;
+  transform: translateX(-50%);
+  width: 97%;
+  height: 70%;
+  border-radius: 50%;
+  background:
+    /* soft contact shadow where the phone base meets the top (center-back) */
+    radial-gradient(26% 40% at 50% 22%, rgba(22, 18, 52, 0.32), transparent 72%),
+    /* bright specular reflection near the top */
+    radial-gradient(40% 52% at 45% 32%, rgba(255, 255, 255, 0.9), transparent 62%),
+    /* glossy surface fill: bright → mid → edge */
+    radial-gradient(82% 96% at 50% 42%, rgba(230, 236, 255, 0.95) 0%, rgba(172, 184, 250, 0.84) 46%, rgba(116, 132, 234, 0.62) 100%);
+  box-shadow:
+    /* crisp front rim highlight */
+    inset 0 1px 2px rgba(255, 255, 255, 0.8),
+    /* subtle far-edge (back) shading for curvature */
+    inset 0 -5px 9px rgba(66, 76, 176, 0.42);
 }
 
 /* ---- Landing nav ------------------------------------------------------ */
@@ -796,6 +846,8 @@
   .cine-text {
     text-align: center;
     order: 1;
+    top: 0;
+    left: 0;
   }
   .cine-visual {
     order: 2;

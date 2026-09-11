@@ -176,6 +176,13 @@ export default function CinematicHero({ onGetStarted }) {
           </div>
 
           <div className="cine-visual" data-hero-in aria-hidden="true">
+            {/* Glossy podium the phone stands on. A real element (not a
+                background gradient) so its filled elliptical top surface reads
+                as a solid platform in front of the phone's base rather than a
+                ring. Painted before the phone so the phone occludes its back. */}
+            <div className="cine-podium" aria-hidden="true">
+              <span className="cine-podium-top" />
+            </div>
             <div className="cine-phone">
               {/* If WebGL can't initialise (blocked/unsupported GPU) the 3D scene
                   throws. Scope it so only the phone drops out — the headline, CTA
