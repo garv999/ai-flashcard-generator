@@ -11,7 +11,7 @@ function aiProxyDev() {
     apply: 'serve',
     configureServer(server) {
       const env = loadEnv(server.config.mode, process.cwd(), '')
-      for (const k of ['OPENAI_API_KEY', 'ANTHROPIC_API_KEY']) {
+      for (const k of ['GEMINI_API_KEY']) {
         if (env[k] && !process.env[k]) process.env[k] = env[k]
       }
       server.middlewares.use('/api/ai', async (req, res) => {

@@ -465,8 +465,8 @@ export default function ChatAssistant({
 
         {provider === 'demo' && (
           <p className="chat-notice" role="note">
-            Demo mode — answers are generated from this {kind} on your device. Switch to OpenAI or
-            Claude in Settings for full AI.
+            Demo mode — answers are generated from this {kind} on your device. Switch to Gemini in
+            Settings for full AI.
           </p>
         )}
 

@@ -9,17 +9,18 @@
 //   - ranking of decks by their best-matching card via cosine similarity.
 //
 // Works for Demo mode (offline local hashing embedder) and signed-in users
-// (same embedder resolution). With the OpenAI provider it uses real
-// text-embedding-3-small vectors; otherwise it falls back to the local embedder.
-// It never throws to the UI — on any failure the caller falls back to keyword
-// search.
+// (same embedder resolution). With the Gemini provider it uses real
+// gemini-embedding-001 vectors; otherwise it falls back to the local embedder.
+// Vectors are cached under the embedder model, so Gemini and local vectors are
+// never mixed. It never throws to the UI — on any failure the caller falls back
+// to keyword search.
 import { resolveEmbedder, embedTexts, embedQuery } from './embeddings.js'
 import { dot } from './retrieval.js'
 
 const CACHE_PREFIX = 'aifc.cardvec.' // + embedder model
 // A modest floor so near-orthogonal (irrelevant) cards are dropped. The local
 // hashing embedder produces smaller scores than OpenAI, hence a lower floor.
-const MIN_SCORE = { openai: 0.28, local: 0.12 }
+const MIN_SCORE = { gemini: 0.28, local: 0.12 }
 
 // ---- content hashing (FNV-1a 32-bit) -----------------------------------
 function hashText(str) {
@@ -87,7 +88,7 @@ function persist(model, store) {
 // a local-embedder floor; `real` is true only when true embeddings are in use.
 export function semanticInfo(settings) {
   const e = resolveEmbedder(settings)
-  return { available: true, kind: e.provider, real: e.provider === 'openai' }
+  return { available: true, kind: e.provider, real: e.provider === 'gemini' }
 }
 
 // Flatten every card across all decks into an indexable list.

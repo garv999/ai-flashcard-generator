@@ -30,8 +30,7 @@ export default function Header({
 }) {
   const semantic = searchMode === 'semantic'
   const isLive = provider !== 'demo'
-  const label =
-    provider === 'openai' ? 'OpenAI' : provider === 'anthropic' ? 'Claude' : 'Demo mode'
+  const label = provider === 'gemini' ? 'Gemini' : 'Demo mode'
   const displayName = user?.displayName || user?.email || 'Account'
 
   return (

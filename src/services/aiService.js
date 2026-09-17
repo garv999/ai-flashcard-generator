@@ -1,14 +1,13 @@
 // AI service layer.
 //
 // generateFlashcards() returns an array of { question, answer } objects.
-// It supports three modes, chosen via the `provider` setting:
-//   - 'demo'      : a built-in mock generator. No API key, works offline.
-//   - 'openai'    : OpenAI Chat Completions API (gpt-4o-mini).
-//   - 'anthropic' : Anthropic Claude Messages API.
+// It supports two modes, chosen via the `provider` setting:
+//   - 'demo'   : a built-in mock generator. No API key, works offline.
+//   - 'gemini' : Google Gemini (gemini-2.5-flash) via generateContent.
 //
-// The OpenAI/Anthropic paths go through our own server-side proxy (`/api/ai`,
-// see src/services/aiProxy.js + api/ai.js): the browser sends only the request
-// body, and the key is injected server-side from an env var. No provider key is
+// The Gemini path goes through our own server-side proxy (`/api/ai`, see
+// src/services/aiProxy.js + api/ai.js): the browser sends only the request body,
+// and the key is injected server-side from GEMINI_API_KEY. No provider key is
 // ever present in the client bundle, localStorage, or outbound browser requests.
 
 import { callProvider, streamProvider } from './aiProxy.js'
@@ -199,34 +198,45 @@ async function streamOut(text, onToken, signal) {
 }
 
 // ---------------------------------------------------------------------------
-// OpenAI
+// Google Gemini adapter
+//
+// Maps the app's provider-neutral request concepts onto Gemini's REST shape:
+//   system prompt  -> systemInstruction.parts[].text
+//   messages       -> contents[].{ role: 'user' | 'model', parts: [{ text }] }
+//   temperature    -> generationConfig.temperature
+//   token limit    -> generationConfig.maxOutputTokens
+// The model name goes in the URL server-side; the client only names it so the
+// proxy can validate it against ALLOWED_MODELS.
 // ---------------------------------------------------------------------------
-async function openaiGenerate(userPrompt) {
-  const json = await callProvider('openai', 'chat', {
-    model: 'gpt-4o-mini',
-    temperature: 0.7,
-    messages: [
-      { role: 'system', content: SYSTEM_PROMPT },
-      { role: 'user', content: userPrompt },
-    ],
-  })
-  return extractCards(json.choices?.[0]?.message?.content)
+const GEMINI_MODEL = 'gemini-2.5-flash'
+
+// Pull the text out of a Gemini generateContent response (parts may be split).
+function geminiText(json) {
+  const parts = json?.candidates?.[0]?.content?.parts
+  return Array.isArray(parts) ? parts.map((p) => p?.text || '').join('') : ''
 }
 
-// ---------------------------------------------------------------------------
-// Anthropic Claude
-// ---------------------------------------------------------------------------
-async function anthropicGenerate(userPrompt, maxTokens = 1500) {
-  const json = await callProvider('anthropic', 'chat', {
-    model: 'claude-sonnet-5',
-    max_tokens: maxTokens,
-    system: SYSTEM_PROMPT,
-    messages: [{ role: 'user', content: userPrompt }],
+// Map app messages ({ role: 'user' | 'assistant', content }) to Gemini contents.
+// Gemini uses 'model' for the assistant role and requires the first turn to be
+// from the user, so we drop any leading non-user turns (mirrors the old
+// Anthropic requirement).
+function toGeminiContents(msgs) {
+  const contents = (msgs || []).map((m) => ({
+    role: m.role === 'assistant' ? 'model' : 'user',
+    parts: [{ text: String(m.content ?? '') }],
+  }))
+  while (contents.length && contents[0].role !== 'user') contents.shift()
+  return contents
+}
+
+async function geminiGenerate(userPrompt, maxTokens = 4096) {
+  const json = await callProvider('gemini', 'chat', {
+    model: GEMINI_MODEL,
+    systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+    contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+    generationConfig: { temperature: 0.7, maxOutputTokens: maxTokens },
   })
-  const text = Array.isArray(json.content)
-    ? json.content.map((b) => b.text || '').join('')
-    : ''
-  return extractCards(text)
+  return extractCards(geminiText(json))
 }
 
 // ---------------------------------------------------------------------------
@@ -236,12 +246,8 @@ export async function generateFlashcards(topic, settings) {
   const count = Math.min(Math.max(Number(settings.cardCount) || 10, 1), 20)
   const provider = settings.provider || 'demo'
 
-  if (provider === 'openai') {
-    return openaiGenerate(buildUserPrompt(topic, count))
-  }
-
-  if (provider === 'anthropic') {
-    return anthropicGenerate(buildUserPrompt(topic, count))
+  if (provider === 'gemini') {
+    return geminiGenerate(buildUserPrompt(topic, count))
   }
 
   // Demo mode
@@ -318,40 +324,21 @@ function deckContext(deck, max = MAX_CONTEXT_CARDS) {
   return cards.map((c, i) => `${i + 1}. Q: ${c.question}\n   A: ${c.answer}`).join('\n')
 }
 
-async function openaiChat(system, msgs, { signal, onToken } = {}) {
+async function geminiChat(system, msgs, { signal, onToken } = {}) {
   const body = {
-    model: 'gpt-4o-mini',
-    temperature: 0.5,
-    max_tokens: 700,
-    messages: [{ role: 'system', content: system }, ...msgs],
+    model: GEMINI_MODEL,
+    systemInstruction: { parts: [{ text: system }] },
+    contents: toGeminiContents(msgs),
+    generationConfig: { temperature: 0.5, maxOutputTokens: 2048 },
   }
   if (onToken) {
-    const text = await streamProvider('openai', 'chat', body, { signal, onToken })
-    if (!text.trim()) throw new Error('Empty response from OpenAI.')
+    const text = await streamProvider('gemini', 'chat', body, { signal, onToken })
+    if (!text.trim()) throw new Error('Empty response from Gemini.')
     return text.trim()
   }
-  const json = await callProvider('openai', 'chat', body, { signal })
-  const text = json.choices?.[0]?.message?.content?.trim()
-  if (!text) throw new Error('Empty response from OpenAI.')
-  return text
-}
-
-async function anthropicChat(system, msgs, { signal, onToken } = {}) {
-  const body = {
-    model: 'claude-sonnet-5',
-    max_tokens: 800,
-    temperature: 0.5,
-    system,
-    messages: msgs,
-  }
-  if (onToken) {
-    const text = await streamProvider('anthropic', 'chat', body, { signal, onToken })
-    if (!text.trim()) throw new Error('Empty response from Anthropic.')
-    return text.trim()
-  }
-  const json = await callProvider('anthropic', 'chat', body, { signal })
-  const text = Array.isArray(json.content) ? json.content.map((b) => b.text || '').join('').trim() : ''
-  if (!text) throw new Error('Empty response from Anthropic.')
+  const json = await callProvider('gemini', 'chat', body, { signal })
+  const text = geminiText(json).trim()
+  if (!text) throw new Error('Empty response from Gemini.')
   return text
 }
 
@@ -568,13 +555,8 @@ export async function answerAssistant({ question, deck, history = [], settings, 
   const grounded = !!retrieved // answer is grounded in the uploaded document
 
   let text
-  if (provider === 'openai') {
-    text = await openaiChat(system, msgs, { signal, onToken })
-  } else if (provider === 'anthropic') {
-    // Anthropic requires the first message to be from the user.
-    const trimmed = [...msgs]
-    while (trimmed.length && trimmed[0].role !== 'user') trimmed.shift()
-    text = await anthropicChat(system, trimmed, { signal, onToken })
+  if (provider === 'gemini') {
+    text = await geminiChat(system, msgs, { signal, onToken })
   } else {
     // Demo mode — offline. Coaching questions are answered from the progress
     // briefing; questions that call for a visual get a generated diagram / table;
@@ -602,12 +584,7 @@ export async function answerAssistant({ question, deck, history = [], settings, 
 // dispatch inside answerAssistant, including Anthropic's user-first requirement.
 export async function runChat({ system, messages, settings, signal, onToken } = {}) {
   const provider = settings?.provider || 'demo'
-  if (provider === 'openai') return openaiChat(system, messages, { signal, onToken })
-  if (provider === 'anthropic') {
-    const trimmed = [...messages]
-    while (trimmed.length && trimmed[0].role !== 'user') trimmed.shift()
-    return anthropicChat(system, trimmed, { signal, onToken })
-  }
+  if (provider === 'gemini') return geminiChat(system, messages, { signal, onToken })
   return null // Demo mode — offline, no provider to call.
 }
 
@@ -734,7 +711,7 @@ export async function generateQuizDistractors({ deck, settings, signal } = {}) {
   const provider = settings?.provider || 'demo'
   const cards = (deck?.cards || []).slice(0, MAX_DISTRACTOR_CARDS)
   // Demo mode has no provider to ask, so there is nothing to enrich with.
-  if (provider !== 'openai' && provider !== 'anthropic') return null
+  if (provider !== 'gemini') return null
   if (!cards.length) return null
 
   const key = distractorCacheKey(deck, provider)
@@ -746,10 +723,7 @@ export async function generateQuizDistractors({ deck, settings, signal } = {}) {
   // the shared cache entry for every later caller. The component ignores a late
   // result instead; the request is small and completes on its own.
   const pending = (async () => {
-    const text =
-      provider === 'openai'
-        ? await openaiChat(DISTRACTOR_SYSTEM, [{ role: 'user', content: prompt }])
-        : await anthropicChat(DISTRACTOR_SYSTEM, [{ role: 'user', content: prompt }])
+    const text = await geminiChat(DISTRACTOR_SYSTEM, [{ role: 'user', content: prompt }])
     return parseDistractors(text, cards)
   })().catch(() => {
     // Failed lookups aren't cached — a later attempt may succeed.
@@ -783,10 +757,8 @@ export async function generateFlashcardsFromContent(content, settings, { onProgr
     if (onProgress) onProgress({ current: i + 1, total: chunks.length })
 
     let cards
-    if (provider === 'openai') {
-      cards = await openaiGenerate(buildContentPrompt(chunks[i], perChunk))
-    } else if (provider === 'anthropic') {
-      cards = await anthropicGenerate(buildContentPrompt(chunks[i], perChunk), 2000)
+    if (provider === 'gemini') {
+      cards = await geminiGenerate(buildContentPrompt(chunks[i], perChunk))
     } else {
       await delay(500)
       cards = mockGenerateFromContent(chunks[i], perChunk)

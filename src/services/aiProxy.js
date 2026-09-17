@@ -8,7 +8,7 @@
 const ENDPOINT = '/api/ai'
 
 function labelFor(provider) {
-  return provider === 'openai' ? 'OpenAI' : provider === 'anthropic' ? 'Anthropic' : 'AI'
+  return provider === 'gemini' ? 'Gemini' : 'AI'
 }
 
 // Send a provider request through the proxy. `path` is 'chat' | 'embeddings';
@@ -48,17 +48,15 @@ export async function callProvider(provider, path, body, { signal } = {}) {
 }
 
 // Extract the incremental text from one parsed SSE `data:` payload.
-//   OpenAI:    choices[0].delta.content
-//   Anthropic: content_block_delta events with a text_delta
-// Either provider can also deliver an error object mid-stream — throw so the
-// caller can surface it.
+//   Gemini: candidates[0].content.parts[*].text (streamGenerateContent?alt=sse)
+// Gemini can also deliver an error object mid-stream — throw so the caller can
+// surface it. Unknown/malformed shapes yield no text (never crash the stream).
 function deltaFor(provider, json) {
   if (!json || typeof json !== 'object') return ''
   if (json.error) throw new Error(json.error?.message || String(json.error))
-  if (provider === 'openai') return json.choices?.[0]?.delta?.content || ''
-  // Anthropic
-  if (json.type === 'content_block_delta' && json.delta?.type === 'text_delta') {
-    return json.delta.text || ''
+  if (provider === 'gemini') {
+    const parts = json.candidates?.[0]?.content?.parts
+    return Array.isArray(parts) ? parts.map((p) => p?.text || '').join('') : ''
   }
   return ''
 }
@@ -108,12 +106,8 @@ export async function streamProvider(provider, path, body, { signal, onToken } =
   const ctype = res.headers.get('content-type') || ''
   if (!res.body || !ctype.includes('text/event-stream')) {
     const json = await res.json().catch(() => null)
-    const full =
-      provider === 'openai'
-        ? json?.choices?.[0]?.message?.content || ''
-        : Array.isArray(json?.content)
-          ? json.content.map((b) => b.text || '').join('')
-          : ''
+    const parts = json?.candidates?.[0]?.content?.parts
+    const full = Array.isArray(parts) ? parts.map((p) => p?.text || '').join('') : ''
     if (full && onToken) onToken(full)
     return full
   }
@@ -155,15 +149,15 @@ export async function streamProvider(provider, path, body, { signal, onToken } =
   return full
 }
 
-// Ask the server which providers have a key configured (for the Settings UI).
-// Best-effort: resolves to { openai: false, anthropic: false } if unreachable.
+// Ask the server whether Gemini has a key configured (for the Settings UI).
+// Best-effort: resolves to { gemini: false } if unreachable.
 export async function fetchProviderStatus() {
   try {
     const res = await fetch(ENDPOINT, { method: 'GET' })
-    if (!res.ok) return { openai: false, anthropic: false }
+    if (!res.ok) return { gemini: false }
     const json = await res.json()
-    return json?.providers || { openai: false, anthropic: false }
+    return json?.providers || { gemini: false }
   } catch {
-    return { openai: false, anthropic: false }
+    return { gemini: false }
   }
 }

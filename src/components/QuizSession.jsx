@@ -47,7 +47,7 @@ function ScoreRing({ pct }) {
 export default function QuizSession({ set, onSaveResult, onExit, settings }) {
   const provider = settings?.provider || 'demo'
   const wantsAi = useMemo(
-    () => needsAiDistractors(set) && (provider === 'openai' || provider === 'anthropic'),
+    () => needsAiDistractors(set) && provider === 'gemini',
     [set, provider],
   )
   const [aiDistractors, setAiDistractors] = useState(null)

@@ -21,6 +21,13 @@ import { chunkText, chunkPages } from './chunking.js'
 import { resolveEmbedder, embedTexts, embedQuery } from './embeddings.js'
 
 const INDEX_VERSION = 1
+
+// Embedder providers whose vectors are still valid to use. An index built with a
+// now-removed embedder (e.g. the former OpenAI 'text-embedding-3-small' vectors)
+// lives in a different vector space, so it must NOT be reused with the current
+// embedder — it is dropped on load and the deck re-indexes with today's embedder.
+// Local (hash-v1) and Gemini indexes are honoured.
+const SUPPORTED_EMBED_PROVIDERS = new Set(['local', 'gemini'])
 const RAG_KEY = 'aifc.rag' // Demo-mode localStorage bucket: { [deckId]: serialized }
 const DEFAULT_TOP_K = 5
 // Low noise floor: local-embedder cosine scores are modest (a strong match is
@@ -108,6 +115,9 @@ export function serializeIndex(index) {
 
 export function deserializeIndex(data) {
   if (!data || !data.vecs || !data.count) return null
+  // Discard indexes built with an embedder we no longer support (different
+  // vector space) so their vectors are never compared against current ones.
+  if (data.embedder && !SUPPORTED_EMBED_PROVIDERS.has(data.embedder.provider)) return null
   const dim = data.dim || data.embedder?.dim
   return {
     version: data.v || INDEX_VERSION,

@@ -4,8 +4,7 @@ import { fetchProviderStatus } from '../services/aiProxy.js'
 
 const PROVIDERS = [
   { id: 'demo', name: 'Demo', sub: 'No key needed' },
-  { id: 'openai', name: 'OpenAI', sub: 'gpt-4o-mini' },
-  { id: 'anthropic', name: 'Claude', sub: 'claude-sonnet-5' },
+  { id: 'gemini', name: 'Gemini', sub: 'gemini-2.5-flash' },
 ]
 
 export default function SettingsModal({ settings, onSave, onClose }) {
@@ -101,9 +100,9 @@ export default function SettingsModal({ settings, onSave, onClose }) {
               })}
             </div>
             <p className="field-note">
-              API keys are configured on the server and never sent from your browser. Demo mode
-              runs fully offline with no key. To enable OpenAI or Claude, set the matching key in
-              the server&apos;s environment.
+              The API key is configured on the server and never sent from your browser. Demo mode
+              runs fully offline with no key. To enable Gemini, set GEMINI_API_KEY in the
+              server&apos;s environment.
             </p>
           </section>
 

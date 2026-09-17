@@ -5,7 +5,7 @@ const SETS_KEY = 'aifc.sets'
 const SETTINGS_KEY = 'aifc.settings'
 
 const DEFAULT_SETTINGS = {
-  provider: 'demo', // 'demo' | 'openai' | 'anthropic'
+  provider: 'demo', // 'demo' | 'gemini'
   cardCount: 10,
 }
 

@@ -1,10 +1,8 @@
 // Embedding provider abstraction for the retrieval (RAG) pipeline.
 //
 // Turns text into dense vectors, reusing the app's existing provider model:
-//   - 'openai'    : real embeddings via text-embedding-3-small (key required).
-//   - 'anthropic' : Anthropic has no embeddings endpoint, so it falls back to
-//                   the local embedder below (offline, no extra key needed).
-//   - 'demo'      : the local embedder — fully offline, no API key.
+//   - 'gemini' : real embeddings via gemini-embedding-001 (key required).
+//   - 'demo'   : the local embedder — fully offline, no API key.
 //
 // The LOCAL EMBEDDER is a dependency-free "hashing trick" bag-of-words + bigram
 // model projected into a fixed-dimension space and L2-normalised. It captures
@@ -12,16 +10,18 @@
 // Demo mode genuinely work without a network. All vectors are unit-normalised,
 // so cosine similarity reduces to a dot product.
 //
-// OpenAI embeddings go through the same server-side proxy as the chat/generation
+// Gemini embeddings go through the same server-side proxy as the chat/generation
 // calls (src/services/aiProxy.js) — the key is injected server-side and never
-// reaches the browser.
+// reaches the browser. Gemini and local vectors live in different spaces and are
+// cached under different model keys, so they are never mixed (see semanticSearch
+// and retrieval's embedder-provider guard).
 
 import { callProvider } from './aiProxy.js'
 
 export const LOCAL_DIM = 384
-const OPENAI_MODEL = 'text-embedding-3-small'
-const OPENAI_DIM = 1536
-const OPENAI_BATCH = 64 // inputs per embeddings request
+const GEMINI_MODEL = 'gemini-embedding-001'
+const GEMINI_DIM = 768 // Matryoshka output dimension (must be L2-normalised)
+const GEMINI_BATCH = 100 // inputs per batchEmbedContents request
 
 const STOP_WORDS = new Set([
   'the', 'a', 'an', 'of', 'to', 'in', 'is', 'and', 'or', 'for', 'on', 'at', 'by', 'as', 'be',
@@ -77,19 +77,23 @@ export function localEmbed(text, dim = LOCAL_DIM) {
 // The index stores this so its query is always embedded the same way later.
 export function resolveEmbedder(settings) {
   const provider = settings?.provider || 'demo'
-  if (provider === 'openai') {
-    return { provider: 'openai', model: OPENAI_MODEL, dim: OPENAI_DIM, needsKey: true }
+  if (provider === 'gemini') {
+    return { provider: 'gemini', model: GEMINI_MODEL, dim: GEMINI_DIM, needsKey: true }
   }
-  // Anthropic (no embeddings API) and Demo both use the offline local embedder.
+  // Demo (and any non-Gemini provider) uses the offline local embedder.
   return { provider: 'local', model: 'hash-v1', dim: LOCAL_DIM, needsKey: false }
 }
 
-async function openaiEmbedBatch(inputs, signal) {
-  const json = await callProvider('openai', 'embeddings', { model: OPENAI_MODEL, input: inputs }, { signal })
-  // Keep provider order stable, then normalise so cosine == dot product.
-  return (json.data || [])
-    .sort((a, b) => a.index - b.index)
-    .map((d) => l2normalize(d.embedding.slice()))
+async function geminiEmbedBatch(inputs, signal) {
+  const requests = inputs.map((text) => ({
+    model: `models/${GEMINI_MODEL}`,
+    content: { parts: [{ text }] },
+    outputDimensionality: GEMINI_DIM,
+  }))
+  const json = await callProvider('gemini', 'embeddings', { model: GEMINI_MODEL, requests }, { signal })
+  // Gemini returns embeddings in request order. Reduced-dimension (Matryoshka)
+  // vectors aren't unit-length, so normalise — cosine then reduces to a dot.
+  return (json.embeddings || []).map((e) => l2normalize((e.values || []).slice()))
 }
 
 // Embed many texts with a resolved embedder. Returns number[][] (parallel to
@@ -98,14 +102,14 @@ export async function embedTexts(texts, embedder, settings, { onProgress, signal
   const list = texts || []
   if (!list.length) return []
 
-  if (embedder.provider === 'openai') {
+  if (embedder.provider === 'gemini') {
     const out = []
-    const batches = Math.ceil(list.length / OPENAI_BATCH)
+    const batches = Math.ceil(list.length / GEMINI_BATCH)
     for (let b = 0; b < batches; b++) {
-      const slice = list.slice(b * OPENAI_BATCH, (b + 1) * OPENAI_BATCH)
-      const vecs = await openaiEmbedBatch(slice, signal)
+      const slice = list.slice(b * GEMINI_BATCH, (b + 1) * GEMINI_BATCH)
+      const vecs = await geminiEmbedBatch(slice, signal)
       out.push(...vecs)
-      if (onProgress) onProgress({ current: Math.min((b + 1) * OPENAI_BATCH, list.length), total: list.length })
+      if (onProgress) onProgress({ current: Math.min((b + 1) * GEMINI_BATCH, list.length), total: list.length })
     }
     return out
   }
