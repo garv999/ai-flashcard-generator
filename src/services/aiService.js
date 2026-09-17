@@ -3,7 +3,7 @@
 // generateFlashcards() returns an array of { question, answer } objects.
 // It supports two modes, chosen via the `provider` setting:
 //   - 'demo'   : a built-in mock generator. No API key, works offline.
-//   - 'gemini' : Google Gemini (gemini-2.5-flash) via generateContent.
+//   - 'gemini' : Google Gemini (gemini-3.6-flash) via generateContent.
 //
 // The Gemini path goes through our own server-side proxy (`/api/ai`, see
 // src/services/aiProxy.js + api/ai.js): the browser sends only the request body,
@@ -208,7 +208,7 @@ async function streamOut(text, onToken, signal) {
 // The model name goes in the URL server-side; the client only names it so the
 // proxy can validate it against ALLOWED_MODELS.
 // ---------------------------------------------------------------------------
-const GEMINI_MODEL = 'gemini-2.5-flash'
+const GEMINI_MODEL = 'gemini-3.6-flash'
 
 // Pull the text out of a Gemini generateContent response (parts may be split).
 function geminiText(json) {

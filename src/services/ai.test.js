@@ -72,7 +72,7 @@ describe('api/ai proxy — routing & validation', () => {
 
   it('rejects an unsupported path', async () => {
     const res = mockRes()
-    await handler(mockReq('POST', { provider: 'gemini', path: 'images', body: { model: 'gemini-2.5-flash' } }), res)
+    await handler(mockReq('POST', { provider: 'gemini', path: 'images', body: { model: 'gemini-3.6-flash' } }), res)
     expect(res.statusCode).toBe(400)
     expect(res.body).toContain('Unsupported path')
   })
@@ -87,7 +87,7 @@ describe('api/ai proxy — routing & validation', () => {
   it('returns a clear 501 when GEMINI_API_KEY is missing', async () => {
     delete process.env.GEMINI_API_KEY
     const res = mockRes()
-    await handler(mockReq('POST', { provider: 'gemini', path: 'chat', body: { model: 'gemini-2.5-flash', contents: [] } }), res)
+    await handler(mockReq('POST', { provider: 'gemini', path: 'chat', body: { model: 'gemini-3.6-flash', contents: [] } }), res)
     expect(res.statusCode).toBe(501)
     expect(res.body).toContain('GEMINI_API_KEY')
     expect(res.body).not.toContain(KEY)
@@ -101,12 +101,12 @@ describe('api/ai proxy — routing & validation', () => {
     await handler(mockReq('POST', {
       provider: 'gemini',
       path: 'chat',
-      body: { model: 'gemini-2.5-flash', stream: false, contents: [{ role: 'user', parts: [{ text: 'hi' }] }], generationConfig: { temperature: 0.5 } },
+      body: { model: 'gemini-3.6-flash', stream: false, contents: [{ role: 'user', parts: [{ text: 'hi' }] }], generationConfig: { temperature: 0.5 } },
     }), res)
 
     expect(fetchMock).toHaveBeenCalledTimes(1)
     const [url, opts] = fetchMock.mock.calls[0]
-    expect(url).toBe('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent')
+    expect(url).toBe('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent')
     expect(opts.headers['x-goog-api-key']).toBe(KEY)
     // model + stream stripped; key never in the forwarded body
     const sent = JSON.parse(opts.body)
@@ -152,11 +152,11 @@ describe('api/ai proxy — routing & validation', () => {
     await handler(mockReq('POST', {
       provider: 'gemini',
       path: 'chat',
-      body: { model: 'gemini-2.5-flash', stream: true, contents: [{ role: 'user', parts: [{ text: 'hi' }] }] },
+      body: { model: 'gemini-3.6-flash', stream: true, contents: [{ role: 'user', parts: [{ text: 'hi' }] }] },
     }), res)
 
     const [url] = fetchMock.mock.calls[0]
-    expect(url).toBe('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse')
+    expect(url).toBe('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:streamGenerateContent?alt=sse')
     expect(res.headers['content-type']).toContain('text/event-stream')
     expect(res.body).toContain('candidates')
   })
@@ -180,7 +180,7 @@ describe('client Gemini adapter', () => {
     expect(captured.endpoint).toBe('/api/ai')
     expect(captured.body.provider).toBe('gemini')
     expect(captured.body.path).toBe('chat')
-    expect(captured.body.body.model).toBe('gemini-2.5-flash')
+    expect(captured.body.body.model).toBe('gemini-3.6-flash')
     expect(captured.body.body.contents[0].parts[0].text).toContain('Photosynthesis')
     expect(captured.body.body.systemInstruction.parts[0].text).toBeTruthy()
     // No API key anywhere in the browser→proxy payload.
@@ -191,7 +191,7 @@ describe('client Gemini adapter', () => {
   it('surfaces a Gemini error and never leaks a key in the message', async () => {
     const fetchMock = vi.fn(async () => ({ ok: false, status: 429, text: async () => JSON.stringify({ error: { message: 'Quota exceeded' } }) }))
     vi.stubGlobal('fetch', fetchMock)
-    await expect(callProvider('gemini', 'chat', { model: 'gemini-2.5-flash' })).rejects.toThrow(/Gemini request failed \(429\)/)
+    await expect(callProvider('gemini', 'chat', { model: 'gemini-3.6-flash' })).rejects.toThrow(/Gemini request failed \(429\)/)
   })
 
   it('embedTexts (gemini) sends batchEmbedContents requests and returns unit vectors', async () => {

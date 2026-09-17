@@ -4,7 +4,7 @@ import { fetchProviderStatus } from '../services/aiProxy.js'
 
 const PROVIDERS = [
   { id: 'demo', name: 'Demo', sub: 'No key needed' },
-  { id: 'gemini', name: 'Gemini', sub: 'gemini-2.5-flash' },
+  { id: 'gemini', name: 'Gemini', sub: 'gemini-3.6-flash' },
 ]
 
 export default function SettingsModal({ settings, onSave, onClose }) {

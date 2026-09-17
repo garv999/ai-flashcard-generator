@@ -30,7 +30,7 @@ const UPSTREAM = {
 
 // Only these models may pass through, so the proxy can't be abused as an
 // open-ended gateway to the account's API credits.
-const ALLOWED_MODELS = new Set(['gemini-2.5-flash', 'gemini-embedding-001'])
+const ALLOWED_MODELS = new Set(['gemini-3.6-flash', 'gemini-embedding-001'])
 
 function hasKey(provider) {
   const cfg = UPSTREAM[provider]
